@@ -123,8 +123,7 @@
       var msg = (data && data.error && (data.error.message || (typeof data.error === "string" ? data.error : JSON.stringify(data.error)))) || ("API 오류 (" + res.status + ")");
       throw new Error(msg);
     }
-    var text = (data.content || []).filter(function (b) { return b.type === "text"; }).map(function (b) { return b.text; }).join("\n");
-    var cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+    var cleaned = String(data.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
     var start = cleaned.indexOf("{");
     var end = cleaned.lastIndexOf("}");
     if (start === -1 || end === -1) throw new Error("응답에서 JSON을 찾을 수 없음");

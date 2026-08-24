@@ -56,7 +56,7 @@
 [브라우저] 학년별 프롬프트 조립 (분량 규칙 + 출력 JSON 스키마)
    │  POST /api/generate  { prompt, system }
    ▼
-[서버 함수 api/generate.py]  ANTHROPIC_API_KEY 로 Claude Messages API 호출
+[서버 함수 api/generate.py]  OPENAI_API_KEY 로 OpenAI Responses API 호출
    │
    ▼
 [브라우저] JSON 파싱 → 기준 검증 → 미달 시 피드백 붙여 재요청 (최대 4회)
@@ -76,7 +76,7 @@
 |---|---|---|
 | 프론트엔드 | 바닐라 HTML/CSS/JS | 빌드 단계 없음 → 정적 호스팅에 그대로 배포 |
 | 백엔드 | Vercel Python Serverless (`api/generate.py`) | 함수 1개면 충분, 상시 서버 불필요 |
-| AI | Anthropic Claude Messages API | 긴 지시문·JSON 스키마 준수에 적합 |
+| AI | OpenAI Responses API | 긴 지시문·JSON 스키마 준수에 적합 |
 | 상태 저장 | 브라우저 localStorage | 서버에 학생 결과물을 남기지 않음 |
 
 **API 키 취급** — 키는 Vercel 환경변수에만 존재합니다. 브라우저 번들, 네트워크 응답,
