@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AXISOLVE Writing Engine — 주제 선택형 AI 영어 에세이 생성기</title>
+<meta name="description" content="165개 실전 주제 중 하나를 고르면 학년별 합격 기준에 맞춘 영어 에세이를 AI가 생성합니다." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="sitenav">
+  <a class="brand" href="#home">
+    <span class="bar"></span>
+    <span class="brand-text">
+      <span class="brand-name">AXISOLVE</span>
+      <span class="brand-sub">Writing Engine</span>
+    </span>
+  </a>
+  <nav class="navlinks" id="navlinks">
+    <a href="#home" data-nav="home">소개</a>
+    <a href="#generator" data-nav="generator">에세이 생성</a>
+    <a href="#about" data-nav="about">사용법 · FAQ</a>
+  </nav>
+</header>
+
+<!-- ===================== 1. 소개 ===================== -->
+<section id="home" class="page">
+  <div class="hero">
+    <p class="eyebrow">초등 영어 라이팅 · 학년별 자동 첨삭 기준 내장</p>
+    <h1>주제만 고르면,<br /><span class="hl">학년 기준에 맞는 영어 에세이</span>가 완성됩니다.</h1>
+    <p class="lede">
+      전국 15개 어학원에서 실제로 출제된 165개 주제를 그대로 담았습니다.
+      학년(초1-2 / 초3-4 / 초5-6)을 고르면 단어 수·문장 수·문단 구조·격식까지
+      해당 학년 합격 기준에 맞춰 AI가 모범 답안을 작성합니다.
+    </p>
+    <div class="hero-cta">
+      <a class="btn-primary" href="#generator">에세이 생성하러 가기</a>
+      <a class="btn-ghost" href="#about">사용법 먼저 보기</a>
+    </div>
+    <ul class="stats">
+      <li><strong>165</strong><span>실전 주제</span></li>
+      <li><strong>5</strong><span>주제 영역</span></li>
+      <li><strong>3</strong><span>학년 기준</span></li>
+      <li><strong>4</strong><span>회 자동 재작성</span></li>
+    </ul>
+  </div>
+
+  <div class="feature-wrap">
+    <h2 class="section-title">이 서비스가 해결하는 문제</h2>
+    <div class="features">
+      <article class="feature">
+        <h3>기준 미달 답안을 스스로 걸러냅니다</h3>
+        <p>
+          생성된 글의 단어 수, 문장 수, 문단 개수, 축약형 사용 여부를 브라우저가 즉시 검사합니다.
+          기준에 미달하면 부족한 항목을 프롬프트에 다시 적어 <strong>최대 4회까지 자동으로 다시 씁니다.</strong>
+        </p>
+      </article>
+      <article class="feature">
+        <h3>학년마다 다른 글을 씁니다</h3>
+        <p>
+          초1-2는 60~80단어 단문 위주, 초3-4는 100~130단어 한 문단 논리 구조,
+          초5-6은 180~220단어 4문단 아카데믹 에세이. <strong>같은 주제라도 학년별로 다른 결과</strong>가 나옵니다.
+        </p>
+      </article>
+      <article class="feature">
+        <h3>API 키는 브라우저에 내려오지 않습니다</h3>
+        <p>
+          모든 AI 호출은 서버의 <code>/api/generate</code> 함수를 거칩니다.
+          키는 서버 환경변수에만 존재하므로 <strong>개발자 도구로도 확인할 수 없습니다.</strong>
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2. 에세이 생성 ===================== -->
+<section id="generator" class="page">
+  <div class="app">
+    <header class="topbar">
+      <span class="bar"></span>
+      <div>
+        <div class="title">AXISOLVE WRITING</div>
+        <div class="sub">주제 선택형 자동 에세이 생성기 · <span id="topic-count">165</span>문항</div>
+      </div>
+    </header>
+
+    <div class="body-row">
+      <aside class="sidebar">
+        <div class="sidebar-search">
+          <div class="search-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <label class="sr-only" for="search-input">주제 검색</label>
+            <input id="search-input" type="text" placeholder="번호, 주제, 학원명 검색" />
+          </div>
+        </div>
+        <div id="sidebar-list" class="sidebar-list">
+          <div style="padding:16px; color:var(--muted-3); font-size:13px;">문항을 불러오는 중...</div>
+        </div>
+      </aside>
+
+      <main class="main" id="main">
+        <div class="empty-state">왼쪽 목록에서 주제를 선택하십시오.</div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 3. 사용법 · FAQ ===================== -->
+<section id="about" class="page">
+  <div class="doc">
+    <h2 class="section-title">사용법</h2>
+    <ol class="steps">
+      <li>
+        <h3>주제를 고릅니다</h3>
+        <p>왼쪽 목록에서 영역(취향·상상·경험·자기소개·학교사회)을 펼치고 주제를 선택합니다.
+           번호, 영어 주제문, 출제 학원명으로 검색할 수도 있습니다.</p>
+      </li>
+      <li>
+        <h3>학년과 키워드를 정합니다</h3>
+        <p>초1-2 / 초3-4 / 초5-6 중 필요한 학년 카드를 엽니다.
+           꼭 넣고 싶은 소재가 있다면 키워드 칸에 적습니다. 비워두면 AI가 주제에 맞는 소재를 직접 고릅니다.</p>
+      </li>
+      <li>
+        <h3>생성 버튼을 누릅니다</h3>
+        <p>브레인스토밍 질문, 아웃라인, 어휘·문형, 에세이 본문이 함께 만들어집니다.
+           기준 미달 시 자동으로 다시 작성되므로 최대 1분 정도 걸릴 수 있습니다.</p>
+      </li>
+      <li>
+        <h3>결과를 저장하거나 내보냅니다</h3>
+        <p>결과는 브라우저에 자동 저장되어 새로고침해도 남아 있습니다.
+           JSON 내보내기로 교재 제작 파이프라인에 그대로 넣을 수 있습니다.</p>
+      </li>
+    </ol>
+
+    <h2 class="section-title">자주 묻는 질문</h2>
+    <div class="faq">
+      <details>
+        <summary>생성 결과가 매번 다른가요?</summary>
+        <p>네. 같은 주제·같은 학년이라도 호출할 때마다 다른 글이 나옵니다.
+           마음에 드는 결과가 나올 때까지 다시 생성해도 됩니다.</p>
+      </details>
+      <details>
+        <summary>"기준 미달" 경고가 뜨면 어떻게 하나요?</summary>
+        <p>4회 재작성 후에도 단어 수나 문단 수가 맞지 않으면, 기준에 가장 가까운 결과를 보여주고 경고를 띄웁니다.
+           이때는 다시 생성하거나 키워드를 조금 더 구체적으로 적어 보십시오.</p>
+      </details>
+      <details>
+        <summary>제 API 키가 노출될 위험은 없나요?</summary>
+        <p>없습니다. 브라우저는 이 사이트의 <code>/api/generate</code> 만 호출하고,
+           Anthropic API 호출은 서버 함수 안에서만 일어납니다. 키는 서버 환경변수에만 저장됩니다.</p>
+      </details>
+      <details>
+        <summary>저장된 결과는 어디에 남나요?</summary>
+        <p>사용 중인 브라우저의 localStorage에만 저장됩니다. 서버에는 아무것도 기록되지 않으므로
+           다른 기기나 다른 브라우저에서는 보이지 않습니다.</p>
+      </details>
+      <details>
+        <summary>오류 메시지가 나옵니다.</summary>
+        <p>화면에 표시되는 문구를 확인해 주십시오. "API 키가 설정되지 않았습니다"는 서버 환경변수 누락,
+           "요청이 몰려…"는 호출량 초과, "연결하지 못했습니다"는 네트워크 문제입니다.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="sitefoot">
+  <span>AXISOLVE EDUTECH · 문법의 축</span>
+  <span>AI 모범 답안은 학습 참고용입니다. 학생 본인의 초고 작성을 대체하지 않습니다.</span>
+</footer>
+
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
