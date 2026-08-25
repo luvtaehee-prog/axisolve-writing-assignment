@@ -2,17 +2,24 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/generate.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "api/_*.py"
     },
     "api/me.py": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "api/_*.py"
     },
     "api/redeem.py": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "api/_*.py"
+    },
+    "api/topics.py": {
+      "maxDuration": 15,
+      "includeFiles": "api/_*.py"
     },
     "api/pdf.py": {
       "maxDuration": 30,
-      "includeFiles": "api/_fonts/**"
+      "includeFiles": "api/**"
     }
   },
   "headers": [
@@ -37,7 +44,7 @@
   "rewrites": [
     {
       "source": "/api/_:path*",
-      "destination": "/api/__blocked"
+      "destination": "/blocked-404"
     }
   ]
 }
