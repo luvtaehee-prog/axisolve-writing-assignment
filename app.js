@@ -315,7 +315,7 @@
       keywordsText = saved.keywordsText || "";
     } else {
       doc = { topic_no: 0, custom: true, area: CUSTOM_AREA, topic: topic,
-              source_academy: "직접 입력", grades: {} };
+              grades: {} };
       keywordsText = ideaEl ? ideaEl.value.trim() : "";
     }
 
@@ -530,7 +530,8 @@
   var search = "";
 
   function matchesQuery(t, q) {
-    return !q || t.topic.toLowerCase().indexOf(q) !== -1 || String(t.no).indexOf(q) !== -1 || t.src.toLowerCase().indexOf(q) !== -1;
+    // 출제 학원명(src)은 서버에서 내려오지 않는다. 번호·주제문·영역으로 검색한다.
+    return !q || t.topic.toLowerCase().indexOf(q) !== -1 || String(t.no).indexOf(q) !== -1 || t.area.indexOf(q) !== -1;
   }
 
   // ---------- rendering: sidebar ----------
@@ -561,7 +562,7 @@
             var active = selectedTopic && t.no === selectedTopic.no;
             html += '<button type="button" class="topic-item ' + (active ? "active" : "") + '" data-topic-no="' + t.no + '">' +
               '<span class="no">' + pad3(t.no) + '</span>' +
-              '<span class="txt"><span class="t">' + escapeHtml(t.topic) + '</span><span class="s">' + escapeHtml(t.src) + (t.isNew ? " · 신규" : "") + '</span></span>' +
+              '<span class="txt"><span class="t">' + escapeHtml(t.topic) + '</span><span class="s">' + escapeHtml(t.area) + (t.isNew ? " · 신규" : "") + '</span></span>' +
               (hasSavedDraft(t.no) ? '<span class="saved">✓</span>' : "") +
               '</button>';
           });
@@ -676,7 +677,7 @@
       '<div class="meta"><span class="area-tag" style="color:' + AREA_COLOR[doc.area] + '">' + escapeHtml(doc.area) + '</span>' +
       (doc.custom
         ? '<span class="custom-badge">직접 입력</span>'
-        : '<span class="no">No.' + pad3(doc.topic_no) + '</span><span>· ' + escapeHtml(doc.source_academy || "") + '</span>') +
+        : '<span class="no">No.' + pad3(doc.topic_no) + '</span>') +
       '</div>' +
       '<h1>' + escapeHtml(doc.topic) + '</h1></div>';
 
@@ -755,7 +756,7 @@
 
   function handleExport() {
     if (!doc) return;
-    var clean = { topic_no: doc.topic_no, area: doc.area, topic: doc.topic, source_academy: doc.source_academy, grades: {} };
+    var clean = { topic_no: doc.topic_no, area: doc.area, topic: doc.topic, grades: {} };
     GRADES.forEach(function (g) {
       if (doc.grades[g]) {
         var rest = Object.assign({}, doc.grades[g]);
@@ -786,7 +787,7 @@
       doc = draft.doc;
       keywordsText = draft.keywordsText || "";
     } else {
-      doc = { topic_no: t.no, area: t.area, topic: t.topic, source_academy: t.src, grades: {} };
+      doc = { topic_no: t.no, area: t.area, topic: t.topic, grades: {} };
       keywordsText = "";
     }
     renderSidebar();
@@ -832,10 +833,12 @@
   // ---------- init ----------
   async function init() {
     try {
-      var res = await fetch("topics.json");
-      TOPICS = await res.json();
+      var res = await fetch("/api/topics", { cache: "default" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var payload = await res.json();
+      TOPICS = payload.topics || [];
     } catch (e) {
-      document.getElementById("sidebar-list").innerHTML = '<div style="padding:16px; color:var(--bad); font-size:13px;">topics.json을 불러오지 못했습니다.</div>';
+      document.getElementById("sidebar-list").innerHTML = '<div style="padding:16px; color:var(--bad); font-size:13px;">주제 목록을 불러오지 못했습니다. 새로고침해 주십시오.</div>';
       return;
     }
     var countEl = document.getElementById("topic-count");

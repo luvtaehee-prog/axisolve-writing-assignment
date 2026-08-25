@@ -1,0 +1,15 @@
+# 배포본에서 제외할 파일.
+# 여기 적힌 것은 Vercel 로 업로드되지 않으므로 정적 파일로 서빙될 수 없다.
+
+# 주제 DB 원본 — 출제 학원명(src)을 포함한다.
+# 배포본에는 src 를 제거한 api/_topics.py 만 들어가며,
+# /api/topics 엔드포인트를 통해서만 노출된다.
+# 주제를 수정한 뒤에는 `py tools/build_topics.py` 로 다시 생성할 것.
+topics.json
+
+# 문서 · 개발 도구 (서비스 동작과 무관)
+docs/
+supabase/
+tools/
+README.md
+.env.example
