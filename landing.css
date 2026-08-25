@@ -667,3 +667,28 @@
 }
 .foot-legal a:hover { color: var(--text); border-bottom-color: var(--muted-3); }
 .foot-legal b { font-weight: 800; }
+
+/* ---------- PDF 내려받기 버튼 ---------- */
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-pdf {
+  background: transparent;
+  color: var(--lime);
+  border: 1px solid rgba(204, 255, 0, .45);
+  white-space: nowrap;
+}
+.btn-pdf:hover:not(:disabled) {
+  background: rgba(204, 255, 0, .12);
+  border-color: var(--lime);
+}
+.btn-pdf:disabled { opacity: .55; cursor: default; }
+
+@media (max-width: 640px) {
+  .panel-actions { width: 100%; }
+  .panel-actions .btn { flex: 1; justify-content: center; }
+}

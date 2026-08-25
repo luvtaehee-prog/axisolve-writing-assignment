@@ -42,6 +42,7 @@
    - 직접 입력 주제는 **한글로 적어도 영어 에세이로 나옵니다.** 학년 기준은 동일하게 적용됩니다.
 2. **처리** — 브라우저가 `POST /api/generate` 호출 → Python 함수가 서버에서 OpenAI API 호출
 3. **출력** — 브레인스토밍 질문, 아웃라인, 어휘·문형, 에세이 본문
+   - **워크북 PDF 내려받기** — 학년별 3~4페이지 A4 서식 (`docs/layout_spec.md`)
 4. **자동 검증** — 단어 수·문장 수·문단 수·축약형 사용 여부를 브라우저가 검사하고,
    기준 미달이면 부족한 항목을 프롬프트에 명시해 **최대 4회까지 자동 재생성**
 
@@ -59,6 +60,33 @@
 | 응답 형식 오류 | "응답에서 JSON을 찾을 수 없음" → 자동 재시도 |
 | 4회 모두 기준 미달 | 가장 근접한 결과 표시 + 화면에 경고 배지 |
 
+## 워크북 PDF
+
+생성 결과를 학생이 손으로 따라 쓸 수 있는 A4 워크북으로 내려받습니다.
+양식은 [docs/layout_spec.md](docs/layout_spec.md) 에 고정되어 있습니다.
+
+| 학년 | 페이지 | 구성 |
+|---|---|---|
+| Grade 1-2 | 3 | 브레인스토밍·아웃라인·키워드 / 모델 에세이 / 연습장+자가진단 |
+| Grade 3-4 | 3 | 브레인스토밍·아웃라인·연결어 / 모델 단락 / 연습장+자가진단 |
+| Grade 5-6 | 4 | 매트릭스·어휘 / 모델 에세이 / 드래프팅 시트 / 자가진단 |
+
+**PDF는 서버에서 만듭니다**(`POST /api/pdf`). 헤더의 `Past Test · {출제 학원명}` 때문입니다.
+학원명은 브라우저로 내려보내지 않으므로, 서버에서 만들어야 노출 없이 찍을 수 있습니다.
+브라우저가 보낸 주제·영역·학원명은 신뢰하지 않고 `topic_no` 로 서버 DB를 조회해 덮어씁니다.
+
+크레딧은 차감하지 않습니다. 생성 시점에 이미 받았고 PDF 자체의 추가 원가는 0입니다.
+
+로컬에서 직접 뽑으려면:
+
+```bash
+py tools/make_workbook.py <source.json> -o <출력폴더>
+py tools/make_workbook.py <source.json> --grade "Grade 1-2"
+```
+
+> **폰트** — Vercel 서버에는 한글 폰트가 없어 저장소에 동봉합니다.
+> 한자를 덜어낸 서브셋이며(11.8MB → 5.55MB), `py tools/build_fonts.py` 로 다시 만듭니다.
+
 ## 주제 DB 보호
 
 165개 주제와 출제 학원명은 이 서비스의 자산이므로 배포본에서 직접 내려받을 수 없게 했습니다.
@@ -67,6 +95,7 @@
 |---|---|---|
 | `topics.json` | ❌ `.vercelignore` 로 제외 | 원본. **출제 학원명(`src`) 포함** |
 | `api/_topics.py` | ✅ | `src` 를 제거한 사본. 파이썬 모듈이라 정적 서빙 불가 |
+| `api/_topics_full.py` | ✅ | `src` 포함. **서버 전용** — PDF 헤더에만 쓰이고 응답에 넣지 않음 |
 
 브라우저는 `GET /api/topics` 로만 목록을 받으며, 이 응답에는 학원명이 들어가지 않습니다.
 엔드포인트에는 출처 검증과 IP당 시간 40회 상한이 걸려 있습니다.
@@ -104,6 +133,11 @@ axisolve-writing-engine/
 ├── tools/build_topics.py  # topics.json → api/_topics.py 생성
 ├── api/topics.py       # 주제 목록 엔드포인트
 ├── api/_topics.py      # 자동 생성 (출제 학원명 제거본)
+├── api/_topics_full.py # 자동 생성 (서버 전용, 학원명 포함)
+├── api/pdf.py          # 워크북 PDF 생성·내려받기
+├── api/_workbook.py    # PDF 렌더링 코어 (CLI 와 공유)
+├── api/_fonts/         # Noto Sans KR 서브셋 (배포본 동봉)
+├── tools/build_fonts.py   # 폰트 서브셋 생성
 ├── api/generate.py     # Vercel Python Serverless Function (OpenAI API 프록시)
 ├── api/_guard.py       # 비용 방어 (출처 검증 · 레이트리밋 · 전역 상한)
 ├── api/_supabase.py    # 로그인 검증 · 크레딧 조작

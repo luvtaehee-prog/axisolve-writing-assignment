@@ -1,1 +1,2 @@
 openai>=3.0,<4
+reportlab>=4.0,<6

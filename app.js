@@ -598,9 +598,14 @@
 
     var html = '<div class="panel-top">' +
       '<div class="panel-rubric">' + escapeHtml(RUBRIC_TEXT[grade]) + '</div>' +
+      '<div class="panel-actions">' +
+      (data && !loading
+        ? '<button type="button" class="btn btn-pdf" id="pdf-btn" data-grade="' + grade + '">' +
+          '<span aria-hidden="true">⬇</span> 워크북 PDF</button>'
+        : "") +
       '<button type="button" class="btn" id="generate-grade-btn" style="background:' + color.accent + '; color:#fff;" ' + (loading ? "disabled" : "") + '>' +
       (loading ? '<span class="spinner"></span>' : "↻") + " " + (data ? "다시 생성" : "이 학년 생성") + attemptLabel +
-      '</button></div>';
+      '</button></div></div>';
 
     if (!data && !loading) { return html + '<div class="panel-empty">아직 생성되지 않았습니다.</div>'; }
     if (loading && !data) { return html + '<div class="panel-loading"><span class="spinner"></span> 생성 중' + attemptLabel + '...</div>'; }
@@ -716,6 +721,71 @@
     mainEl.innerHTML = html;
   }
 
+  // ---------- PDF 내려받기 ----------
+  // 서버(/api/pdf)가 만든다. 헤더의 출제 학원명이 브라우저로 내려오지 않기 때문이다.
+  async function handleDownloadPdf(grade, btn) {
+    if (!doc || !doc.grades[grade]) return;
+
+    var label = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 만드는 중…';
+    errorMsg = "";
+
+    try {
+      var headers = { "Content-Type": "application/json" };
+      if (window.AXAuth) {
+        var t = await AXAuth.token();
+        if (t) headers.Authorization = "Bearer " + t;
+      }
+
+      var res = await fetch("/api/pdf", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify({
+          topic_no: doc.topic_no,
+          grade: grade,
+          topic: doc.topic,
+          area: doc.area,
+          custom: !!doc.custom,
+          data: doc.grades[grade]
+        })
+      });
+
+      if (!res.ok) {
+        var msg = "PDF를 만들지 못했습니다.";
+        try { msg = (await res.json()).error || msg; } catch (e) {}
+        throw new Error(msg);
+      }
+
+      var blob = await res.blob();
+      var name = filenameFromDisposition(res.headers.get("Content-Disposition"))
+        || (pad3(doc.topic_no) + "_" + grade.replace(/\s/g, "_") + ".pdf");
+
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    } catch (e) {
+      errorMsg = (e && e.message) || "PDF를 만들지 못했습니다.";
+      renderMain();
+      return;
+    } finally {
+      if (btn.isConnected) { btn.disabled = false; btn.innerHTML = label; }
+    }
+  }
+
+  function filenameFromDisposition(h) {
+    if (!h) return null;
+    var m = /filename\*=UTF-8''([^;]+)/i.exec(h);
+    if (m) { try { return decodeURIComponent(m[1]); } catch (e) {} }
+    m = /filename="([^"]+)"/i.exec(h);
+    return m ? m[1] : null;
+  }
+
   // ---------- actions ----------
   async function handleGenerate(grade) {
     if (!doc) return;
@@ -813,6 +883,8 @@
     if (e.target.closest("#generate-all-btn")) { handleGenerateAll(); return; }
     if (e.target.closest("#export-btn")) { handleExport(); return; }
     if (e.target.closest("#generate-grade-btn")) { handleGenerate(activeGrade); return; }
+    var pdfBtn = e.target.closest("#pdf-btn");
+    if (pdfBtn) { handleDownloadPdf(pdfBtn.getAttribute("data-grade"), pdfBtn); return; }
   });
 
   document.getElementById("main").addEventListener("input", function (e) {
@@ -865,6 +937,7 @@
     generateWithRetry: generateWithRetry, selectTopicByNo: selectTopicByNo, toggleArea: toggleArea,
     handleGenerate: handleGenerate, handleExport: handleExport, renderSidebar: renderSidebar, renderMain: renderMain,
     showAuthModal: showAuthModal, renderAuthBar: renderAuthBar,
+    handleDownloadPdf: handleDownloadPdf,
     openCustomForm: openCustomForm, submitCustomForm: submitCustomForm,
     getState: function () {
       return { TOPICS: TOPICS, selectedTopic: selectedTopic, doc: doc, keywordsText: keywordsText, activeGrade: activeGrade, loadingInfo: loadingInfo, errorMsg: errorMsg };
