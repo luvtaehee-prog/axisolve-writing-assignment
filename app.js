@@ -5,7 +5,8 @@
   var AREAS = ["취향", "상상", "경험", "자기소개", "학교사회"];
   var AREA_COLOR = {
     "취향": "#E08A5E", "상상": "#8B7FD1", "경험": "#4FA8A0",
-    "자기소개": "#D6B24E", "학교사회": "#5B8FD6"
+    "자기소개": "#D6B24E", "학교사회": "#5B8FD6",
+    "직접 입력": "#CCFF00"
   };
   var GRADES = ["Grade 1-2", "Grade 3-4", "Grade 5-6"];
   var GRADE_LABEL_KO = {
@@ -29,6 +30,7 @@
     "Grade 5-6": "총 180~220단어, 정확히 4문단(Introduction / Body 1 / Body 2 / Conclusion). 포멀한 어조를 유지하고 구어적 축약형(don't, can't, isn't 등)은 절대 쓰지 말 것. 각 근거 뒤에 상술(Elaboration)을 반드시 포함할 것."
   };
   var MAX_ATTEMPTS = 4;
+  var CUSTOM_AREA = "직접 입력";
   var DRAFT_PREFIX = "axisolve_essay_draft_";
 
   var SYSTEM_PROMPT =
@@ -107,21 +109,52 @@
       "- 단어수는 반드시 " + rr.minWords + "~" + rr.maxWords + "단어 범위를 지킬 것. 특히 하한선(" + rr.minWords + "단어) 미달은 절대 금지이며, 상한 초과보다 훨씬 심각한 오류로 간주한다. 분량이 애매하면 짧게 쓰지 말고 하한선을 넉넉히 넘기도록(가능하면 중간값 이상) 작성할 것.\n" +
       "- 스키마에 명시된 키 외 다른 키를 추가하지 말 것.\n" +
       "- 오직 위 스키마를 따르는 JSON 객체 하나만 출력할 것." +
+      customNote +
       feedbackBlock;
   }
 
   // ---------- API call (through /api/generate; API key never touches the browser) ----------
-  async function callModel(prompt) {
+  // 생성 1건을 식별한다. 자동 재시도는 같은 값을 재사용하므로 크레딧이 중복 차감되지 않는다.
+  function newGenId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "gen-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+
+  // 로그인·크레딧 문제는 일반 오류와 다르게 처리해야 하므로 표시를 붙여 던진다.
+  function billingError(kind, message) {
+    var e = new Error(message);
+    e.billing = kind;   // "login" | "credits"
+    return e;
+  }
+
+  async function callModel(prompt, ctx) {
+    var headers = { "Content-Type": "application/json" };
+    if (window.AXAuth) {
+      var t = await AXAuth.token();
+      if (t) headers.Authorization = "Bearer " + t;
+    }
     var res = await fetch("/api/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: prompt, system: SYSTEM_PROMPT })
+      headers: headers,
+      body: JSON.stringify({
+        prompt: prompt,
+        system: SYSTEM_PROMPT,
+        gen_id: ctx && ctx.genId,
+        topic_no: ctx && ctx.topicNo,
+        grade: ctx && ctx.grade
+      })
     });
     var data;
     try { data = await res.json(); } catch (e) { throw new Error("서버 응답을 해석할 수 없습니다."); }
     if (!res.ok) {
       var msg = (data && data.error && (data.error.message || (typeof data.error === "string" ? data.error : JSON.stringify(data.error)))) || ("API 오류 (" + res.status + ")");
+      if (res.status === 401) throw billingError("login", msg);
+      if (res.status === 402) throw billingError("credits", msg);
       throw new Error(msg);
+    }
+    if (window.AXAuth) {
+      if (typeof data.credits === "number") AXAuth.setCredits(data.credits);
+      if (typeof data.free_used === "number") AXAuth.markFreeUsed();
     }
     var cleaned = String(data.text || "").replace(/```json/gi, "").replace(/```/g, "").trim();
     var start = cleaned.indexOf("{");
@@ -180,13 +213,16 @@
     var best = null;
     var feedback = null;
     var lastError = null;
+    var ctx = { genId: newGenId(), topicNo: doc.topic_no, grade: grade };
     for (var attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       if (onAttempt) onAttempt(attempt, MAX_ATTEMPTS);
       var prompt = buildPrompt(grade, doc, keywordsText, feedback);
       var parsed;
       try {
-        parsed = await callModel(prompt);
+        parsed = await callModel(prompt, ctx);
       } catch (e) {
+        // 로그인·크레딧 문제는 재시도해도 결과가 같으므로 즉시 중단한다.
+        if (e && e.billing) throw e;
         lastError = e;
         continue;
       }
@@ -203,10 +239,274 @@
     return { data: best.data, assessment: best.assessment, attempts: MAX_ATTEMPTS, forced: true };
   }
 
+
+
+  // ---------- 내 주제로 직접 쓰기 ----------
+  var customFormOpen = false;
+
+  function openCustomForm() {
+    customFormOpen = true;
+    errorMsg = "";
+    renderSidebar();
+    renderMain();
+    var el = document.getElementById("cf-topic");
+    if (el) el.focus();
+  }
+
+  function closeCustomForm() {
+    customFormOpen = false;
+    renderSidebar();
+    renderMain();
+  }
+
+  function renderCustomFormHtml() {
+    return '<div class="custom-form">' +
+      '<h2>내 주제로 직접 쓰기</h2>' +
+      '<p class="cf-lede">쓰고 싶은 주제와 아이디어를 넣으면, 기출 주제와 똑같은 학년 기준으로 에세이가 만들어집니다. ' +
+      '한글로 적으셔도 영어 에세이로 나옵니다.</p>' +
+
+      '<div class="cf-field">' +
+        '<label for="cf-topic">주제 <i>(필수)</i></label>' +
+        '<input id="cf-topic" type="text" maxlength="200" ' +
+               'placeholder="예) 내가 가장 좋아하는 계절 / Write about your best friend." />' +
+        '<p class="cf-hint">학교 수행평가 주제, 독후감, 대회 주제, 아이가 쓰고 싶어 하는 이야기 모두 됩니다.</p>' +
+      '</div>' +
+
+      '<div class="cf-field">' +
+        '<label for="cf-idea">아이디어 · 꼭 넣을 내용 <i>(선택)</i></label>' +
+        '<textarea id="cf-idea" rows="4" maxlength="1000" ' +
+                  'placeholder="예) 가을을 좋아함. 이유는 단풍, 시원한 바람, 할머니 댁 감나무. 작년 가을 소풍 이야기를 넣고 싶음."></textarea>' +
+        '<p class="cf-hint">비워두면 AI가 주제에 맞는 소재를 직접 고릅니다. 구체적으로 적을수록 아이 이야기에 가까워집니다.</p>' +
+      '</div>' +
+
+      '<div class="cf-actions">' +
+        '<button class="cf-submit" data-cf="submit">이 주제로 시작하기</button>' +
+        '<button class="cf-cancel" data-cf="cancel">취소</button>' +
+      '</div>' +
+      '<p class="cf-error" id="cf-error"></p>' +
+    '</div>';
+  }
+
+  function submitCustomForm() {
+    var topicEl = document.getElementById("cf-topic");
+    var ideaEl = document.getElementById("cf-idea");
+    var errEl = document.getElementById("cf-error");
+    if (!topicEl) return;
+
+    var topic = topicEl.value.trim();
+    if (topic.length < 2) {
+      if (errEl) errEl.textContent = "주제를 입력해 주십시오.";
+      topicEl.focus();
+      return;
+    }
+
+    selectedTopic = { no: 0, area: CUSTOM_AREA, topic: topic, src: "직접 입력" };
+    activeGrade = "Grade 1-2";
+    errorMsg = "";
+
+    var saved = null;
+    try {
+      var raw = localStorage.getItem(customKey(topic));
+      saved = raw ? JSON.parse(raw) : null;
+    } catch (e) { saved = null; }
+
+    if (saved && saved.doc) {
+      doc = saved.doc;
+      keywordsText = saved.keywordsText || "";
+    } else {
+      doc = { topic_no: 0, custom: true, area: CUSTOM_AREA, topic: topic,
+              source_academy: "직접 입력", grades: {} };
+      keywordsText = ideaEl ? ideaEl.value.trim() : "";
+    }
+
+    customFormOpen = false;
+    renderSidebar();
+    renderMain();
+  }
+
+  document.addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-cf]");
+    if (!t) return;
+    var a = t.getAttribute("data-cf");
+    if (a === "submit") submitCustomForm();
+    if (a === "cancel") closeCustomForm();
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Enter" || !customFormOpen) return;
+    if (ev.target && ev.target.id === "cf-topic") {
+      ev.preventDefault();
+      submitCustomForm();
+    }
+  });
+
+  // ---------- 로그인 / 크레딧 UI ----------
+  function closeAuthModal() {
+    var m = document.getElementById("auth-modal");
+    if (m) m.remove();
+  }
+
+  // kind: "login"  무료 체험 소진 → 카카오 로그인 유도
+  //       "credits" 크레딧 소진   → 충전 안내
+  function showAuthModal(kind, message) {
+    closeAuthModal();
+    var A = window.AXAuth;
+    var bonus = (A && A.state.signupBonus) || 3;
+
+    var cfg = (A && A.state.config) || {};
+    var contact = cfg.purchase_contact || "";
+    var bank = cfg.purchase_bank || "";
+
+    var inner;
+    if (kind === "credits") {
+      inner =
+        '<h3 class="auth-title">크레딧이 부족합니다</h3>' +
+        '<p class="auth-desc">' + escapeHtml(message || "충전 후 계속 이용하실 수 있습니다.") + '</p>' +
+        '<div class="auth-plans">' +
+          '<div class="auth-plan"><b>라이트</b><span>30회</span><em>4,900원</em></div>' +
+          '<div class="auth-plan"><b>스탠다드</b><span>100회</span><em>12,900원</em></div>' +
+          '<div class="auth-plan"><b>프로</b><span>500회</span><em>39,000원</em></div>' +
+        '</div>' +
+        (bank ? '<p class="auth-bank">' + escapeHtml(bank) + '</p>' : '') +
+        (contact
+          ? '<a class="auth-contact" href="' + escapeHtml(contact) + '" target="_blank" rel="noopener">충전 문의하기</a>'
+          : '<p class="auth-note">충전을 원하시면 관리자에게 문의해 주십시오.</p>') +
+        '<div class="redeem-box">' +
+          '<label class="redeem-label" for="redeem-input">충전 코드를 받으셨나요?</label>' +
+          '<div class="redeem-row">' +
+            '<input id="redeem-input" class="redeem-input" type="text" autocomplete="off" ' +
+                   'placeholder="AX-XXXX-XXXX" maxlength="20" spellcheck="false">' +
+            '<button class="redeem-btn" data-auth="redeem">등록</button>' +
+          '</div>' +
+          '<p class="redeem-msg" id="redeem-msg"></p>' +
+        '</div>' +
+        '<button class="auth-close-btn" data-auth="close">닫기</button>';
+    } else {
+      inner =
+        '<h3 class="auth-title">무료 체험을 모두 사용하셨습니다</h3>' +
+        '<p class="auth-desc">카카오 로그인 한 번이면 <b>' + bonus + '회</b>를 더 드립니다.<br>' +
+        '한 주제에 대해 세 학년 답안을 모두 받아보실 수 있는 분량입니다.</p>' +
+        '<button class="kakao-btn" data-auth="login">' +
+          '<span class="kakao-icon" aria-hidden="true"></span>카카오로 계속하기</button>' +
+        '<button class="auth-close-btn" data-auth="close">나중에 하기</button>';
+    }
+
+    var el = document.createElement("div");
+    el.id = "auth-modal";
+    el.className = "auth-backdrop";
+    el.innerHTML = '<div class="auth-card" role="dialog" aria-modal="true">' + inner + '</div>';
+    el.addEventListener("click", function (ev) {
+      var act = ev.target.closest("[data-auth]");
+      if (act) {
+        var a = act.getAttribute("data-auth");
+        if (a === "login") { AXAuth.login(); return; }
+        if (a === "close") { closeAuthModal(); return; }
+        if (a === "redeem") { submitRedeem(act); return; }
+      }
+      if (ev.target === el) closeAuthModal();
+    });
+    document.body.appendChild(el);
+
+    var input = document.getElementById("redeem-input");
+    if (input) {
+      input.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          var btn = el.querySelector('[data-auth="redeem"]');
+          if (btn && !btn.disabled) submitRedeem(btn);
+        }
+      });
+    }
+  }
+
+  async function submitRedeem(btn) {
+    var input = document.getElementById("redeem-input");
+    var msg = document.getElementById("redeem-msg");
+    if (!input || !msg) return;
+
+    var code = input.value.trim();
+    if (!code) { msg.className = "redeem-msg bad"; msg.textContent = "코드를 입력해 주십시오."; return; }
+
+    btn.disabled = true;
+    input.disabled = true;
+    msg.className = "redeem-msg";
+    msg.textContent = "확인 중…";
+
+    try {
+      var headers = { "Content-Type": "application/json" };
+      var t = await AXAuth.token();
+      if (t) headers.Authorization = "Bearer " + t;
+
+      var res = await fetch("/api/redeem", {
+        method: "POST", headers: headers, body: JSON.stringify({ code: code })
+      });
+      var d = await res.json();
+
+      if (!res.ok) {
+        msg.className = "redeem-msg bad";
+        msg.textContent = d.error || "코드를 사용할 수 없습니다.";
+        btn.disabled = false;
+        input.disabled = false;
+        return;
+      }
+
+      AXAuth.setCredits(d.balance);
+      msg.className = "redeem-msg good";
+      msg.textContent = d.credits + "회가 충전되었습니다. (잔액 " + d.balance + "회)";
+      setTimeout(closeAuthModal, 1600);
+    } catch (e) {
+      msg.className = "redeem-msg bad";
+      msg.textContent = "충전 서버에 연결하지 못했습니다.";
+      btn.disabled = false;
+      input.disabled = false;
+    }
+  }
+
+  function renderAuthBar(st) {
+    var host = document.getElementById("auth-slot");
+    if (!host) return;
+
+    if (!st.authEnabled) { host.innerHTML = ""; return; }
+
+    if (st.loggedIn) {
+      host.innerHTML =
+        '<button class="credit-badge' + (st.credits === 0 ? ' empty' : '') +
+          '" data-authbar="topup" title="크레딧 충전">' +
+          '<span class="credit-num">' + st.credits + '</span>회' +
+        '</button>' +
+        '<span class="auth-user">' + escapeHtml(st.name || "회원") + '</span>' +
+        '<button class="auth-link" data-authbar="logout">로그아웃</button>';
+    } else {
+      var left = AXAuth.freeRemaining();
+      host.innerHTML =
+        '<span class="credit-badge free" title="비회원 무료 체험">무료 ' + left + '회</span>' +
+        '<button class="kakao-btn small" data-authbar="login">' +
+          '<span class="kakao-icon" aria-hidden="true"></span>카카오 로그인</button>';
+    }
+  }
+
+  document.addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-authbar]");
+    if (!t) return;
+    var a = t.getAttribute("data-authbar");
+    if (a === "login") AXAuth.login();
+    if (a === "logout") AXAuth.logout();
+    if (a === "topup") showAuthModal("credits", "충전 코드를 등록하시거나 아래 상품을 확인해 주십시오.");
+  });
+
   // ---------- persistence (browser localStorage) ----------
   function draftKey(no) { return DRAFT_PREFIX + no; }
+
+  // 커스텀 주제는 번호가 없으므로 주제문에서 안정적인 키를 만든다.
+  function customKey(topic) {
+    var h = 0, str = String(topic || "");
+    for (var i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
+    return DRAFT_PREFIX + "c" + (h >>> 0).toString(36);
+  }
+  function docKey(d) { return d.custom ? customKey(d.topic) : draftKey(d.topic_no); }
+
   function saveDraft(d, kw) {
-    try { localStorage.setItem(draftKey(d.topic_no), JSON.stringify({ doc: d, keywordsText: kw })); } catch (e) {}
+    try { localStorage.setItem(docKey(d), JSON.stringify({ doc: d, keywordsText: kw })); } catch (e) {}
   }
   function loadDraft(no) {
     try {
@@ -234,6 +534,11 @@
   }
 
   // ---------- rendering: sidebar ----------
+  function syncCustomBtn() {
+    var b = document.getElementById("custom-topic-btn");
+    if (b) b.classList.toggle("is-on", customFormOpen || !!(doc && doc.custom));
+  }
+
   function renderSidebar() {
     var query = search.trim().toLowerCase();
     var html = "";
@@ -354,8 +659,14 @@
 
   function renderMain() {
     var mainEl = document.getElementById("main");
+    syncCustomBtn();
+    if (customFormOpen) {
+      mainEl.innerHTML = renderCustomFormHtml();
+      return;
+    }
     if (!selectedTopic || !doc) {
-      mainEl.innerHTML = '<div class="empty-state">왼쪽 목록에서 주제를 선택하십시오.</div>';
+      mainEl.innerHTML = '<div class="empty-state">왼쪽에서 주제를 고르거나, ' +
+        '<b>내 주제로 직접 쓰기</b>를 눌러 시작하십시오.</div>';
       return;
     }
     var generatedCount = GRADES.filter(function (g) { return !!doc.grades[g]; }).length;
@@ -363,7 +674,10 @@
 
     var html = '<div class="topic-head">' +
       '<div class="meta"><span class="area-tag" style="color:' + AREA_COLOR[doc.area] + '">' + escapeHtml(doc.area) + '</span>' +
-      '<span class="no">No.' + pad3(doc.topic_no) + '</span><span>· ' + escapeHtml(doc.source_academy || "") + '</span></div>' +
+      (doc.custom
+        ? '<span class="custom-badge">직접 입력</span>'
+        : '<span class="no">No.' + pad3(doc.topic_no) + '</span><span>· ' + escapeHtml(doc.source_academy || "") + '</span>') +
+      '</div>' +
       '<h1>' + escapeHtml(doc.topic) + '</h1></div>';
 
     html += '<div class="controls">' +
@@ -419,7 +733,12 @@
         errorMsg = GRADE_LABEL_KO[grade] + ": " + MAX_ATTEMPTS + "회 시도 후에도 기준 미달 (" + result.assessment.issues.join(", ") + "). 필요 시 다시 생성하십시오.";
       }
     } catch (e) {
-      errorMsg = GRADE_LABEL_KO[grade] + " 생성 실패: " + ((e && e.message) || "알 수 없는 오류");
+      if (e && e.billing) {
+        showAuthModal(e.billing, e.message);
+        errorMsg = "";
+      } else {
+        errorMsg = GRADE_LABEL_KO[grade] + " 생성 실패: " + ((e && e.message) || "알 수 없는 오류");
+      }
     } finally {
       delete loadingInfo[grade];
       renderMain();
@@ -429,6 +748,8 @@
   async function handleGenerateAll() {
     for (var i = 0; i < GRADES.length; i++) {
       await handleGenerate(GRADES[i]);
+      // 로그인·크레딧 때문에 막혔다면 남은 학년을 시도해도 같은 결과다.
+      if (document.getElementById("auth-modal")) return;
     }
   }
 
@@ -520,6 +841,17 @@
     var countEl = document.getElementById("topic-count");
     if (countEl) countEl.textContent = TOPICS.length;
     renderSidebar();
+
+    var customBtn = document.getElementById("custom-topic-btn");
+    if (customBtn) customBtn.addEventListener("click", openCustomForm);
+
+    if (window.AXAuth) {
+      AXAuth.onChange(function (st) {
+        renderAuthBar(st);
+        // 로그인 직후 보너스가 지급됐으면 열려 있던 안내를 닫는다.
+        if (st.loggedIn) closeAuthModal();
+      });
+    }
   }
 
   init();
@@ -529,6 +861,8 @@
     wordCount: wordCount, sentenceCount: sentenceCount, assess: assess, buildPrompt: buildPrompt,
     generateWithRetry: generateWithRetry, selectTopicByNo: selectTopicByNo, toggleArea: toggleArea,
     handleGenerate: handleGenerate, handleExport: handleExport, renderSidebar: renderSidebar, renderMain: renderMain,
+    showAuthModal: showAuthModal, renderAuthBar: renderAuthBar,
+    openCustomForm: openCustomForm, submitCustomForm: submitCustomForm,
     getState: function () {
       return { TOPICS: TOPICS, selectedTopic: selectedTopic, doc: doc, keywordsText: keywordsText, activeGrade: activeGrade, loadingInfo: loadingInfo, errorMsg: errorMsg };
     }

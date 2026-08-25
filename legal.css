@@ -1,0 +1,127 @@
+/* 약관 · 개인정보처리방침 · 환불규정 공용 스타일 */
+
+body.legal {
+  background: #FFFFFF;
+  color: #101828;
+}
+
+.legal-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 56px 24px 96px;
+}
+
+.legal-back {
+  display: inline-block;
+  margin-bottom: 28px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475467;
+  text-decoration: none;
+}
+.legal-back:hover { color: #101828; }
+
+.legal-wrap h1 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  color: #101828;
+}
+
+.legal-meta {
+  margin: 0 0 34px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #E4E7EC;
+  font-size: 13px;
+  color: #667085;
+}
+
+.legal-notice {
+  margin: 0 0 34px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #92400E;
+  word-break: keep-all;
+}
+.legal-notice b { color: #78350F; }
+
+.legal-wrap h2 {
+  margin: 40px 0 14px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #101828;
+  word-break: keep-all;
+}
+
+.legal-wrap h3 {
+  margin: 24px 0 8px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #344054;
+}
+
+.legal-wrap p,
+.legal-wrap li {
+  font-size: 14px;
+  line-height: 1.85;
+  color: #475467;
+  word-break: keep-all;
+}
+.legal-wrap p { margin: 0 0 12px; }
+.legal-wrap ul, .legal-wrap ol { margin: 0 0 14px; padding-left: 20px; }
+.legal-wrap li { margin-bottom: 6px; }
+.legal-wrap b { color: #101828; }
+
+.legal-wrap table {
+  width: 100%;
+  margin: 0 0 18px;
+  border-collapse: collapse;
+  border: 1px solid #E4E7EC;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.legal-wrap th, .legal-wrap td {
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  text-align: left;
+  border-bottom: 1px solid #F2F4F7;
+  word-break: keep-all;
+}
+.legal-wrap th {
+  background: #F9FAFB;
+  font-weight: 700;
+  color: #101828;
+  white-space: nowrap;
+}
+.legal-wrap td { color: #475467; }
+.legal-wrap tr:last-child th,
+.legal-wrap tr:last-child td { border-bottom: 0; }
+
+.legal-foot {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid #E4E7EC;
+  font-size: 13px;
+  color: #667085;
+}
+.legal-foot a { color: #475467; }
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+.legal-links a { font-size: 13px; font-weight: 700; }
+
+@media (max-width: 620px) {
+  .legal-wrap { padding: 36px 18px 72px; }
+  .legal-wrap h1 { font-size: 23px; }
+  .legal-wrap table { display: block; overflow-x: auto; }
+}

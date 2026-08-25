@@ -1,9 +1,9 @@
-/* 3개 섹션(#home / #generator / #about) 해시 라우팅.
+/* 섹션(#home / #generator / #pricing / #about) 해시 라우팅.
    app.js 보다 먼저 로드되지만, 두 스크립트는 서로 참조하지 않는다. */
 (function () {
   "use strict";
 
-  var PAGES = ["home", "generator", "about"];
+  var PAGES = ["home", "generator", "pricing", "about"];
 
   function currentPage() {
     var id = String(location.hash || "").replace(/^#/, "");

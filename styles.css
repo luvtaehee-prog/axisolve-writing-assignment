@@ -285,3 +285,274 @@ body.is-generator .sitefoot{display:none;}
   padding:20px; display:flex; flex-wrap:wrap; gap:6px 20px; justify-content:space-between;
   font-size:12px; color:var(--muted-3);
 }
+
+
+/* ==========================================================================
+   로그인 · 크레딧 UI (Phase 2)
+   ========================================================================== */
+
+.auth-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.credit-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(204, 255, 0, .14);
+  border: 1px solid rgba(204, 255, 0, .45);
+  color: #CCFF00;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.credit-badge .credit-num { font-size: 14px; }
+.credit-badge.free {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .28);
+  color: rgba(255, 255, 255, .82);
+}
+
+.auth-user {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .72);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-link {
+  background: none;
+  border: 0;
+  padding: 4px 2px;
+  color: rgba(255, 255, 255, .5);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.auth-link:hover { color: rgba(255, 255, 255, .85); }
+
+/* 카카오 버튼 — 브랜드 가이드상 배경 #FEE500 / 글자 #191600 은 바꾸지 않는다 */
+.kakao-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #FEE500;
+  color: #191600;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .15s ease;
+}
+.kakao-btn:hover { filter: brightness(.94); }
+.kakao-btn.small {
+  width: auto;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+
+.kakao-icon {
+  width: 18px;
+  height: 17px;
+  flex: 0 0 auto;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath fill='%23191600' d='M12 0C5.373 0 0 4.243 0 9.475c0 3.38 2.246 6.345 5.625 8.02-.248.9-.9 3.27-1.03 3.78-.16.63.23.62.485.45.2-.132 3.17-2.153 4.457-3.03.803.114 1.63.175 2.463.175 6.627 0 12-4.243 12-9.475C24 4.243 18.627 0 12 0z'/%3E%3C/svg%3E");
+}
+.kakao-btn.small .kakao-icon { width: 15px; height: 14px; }
+
+/* 모달 */
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 21, 46, .72);
+  backdrop-filter: blur(3px);
+  animation: authFade .16s ease;
+}
+@keyframes authFade { from { opacity: 0 } to { opacity: 1 } }
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 26px 22px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(5, 21, 46, .38);
+  text-align: center;
+}
+
+.auth-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #05152E;
+}
+
+.auth-desc {
+  margin: 0 0 20px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #4A5568;
+}
+.auth-desc b { color: #05152E; }
+
+.auth-plans {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+.auth-plan {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.auth-plan b { color: #05152E; font-weight: 700; }
+.auth-plan span { color: #718096; font-size: 12px; }
+.auth-plan em { font-style: normal; font-weight: 700; color: #05152E; }
+
+.auth-note {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #718096;
+}
+
+.auth-close-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: #718096;
+  font-size: 13px;
+  cursor: pointer;
+}
+.auth-close-btn:hover { color: #05152E; }
+
+@media (max-width: 640px) {
+  .auth-slot { gap: 6px; }
+  .auth-user { display: none; }
+  .kakao-btn.small { padding: 6px 10px; font-size: 12px; }
+}
+
+/* 충전 코드 등록 (사업자등록 전 임시 결제 경로) */
+.auth-bank {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #F7FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #2D3748;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.auth-contact {
+  display: block;
+  margin-bottom: 14px;
+  padding: 11px;
+  border-radius: 10px;
+  background: #05152E;
+  color: #CCFF00;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.auth-contact:hover { filter: brightness(1.15); }
+
+.redeem-box {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid #EDF2F7;
+  text-align: left;
+}
+
+.redeem-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4A5568;
+}
+
+.redeem-row { display: flex; gap: 7px; }
+
+.redeem-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #CBD5E0;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #05152E;
+}
+.redeem-input:focus {
+  outline: none;
+  border-color: #05152E;
+  box-shadow: 0 0 0 3px rgba(5, 21, 46, .1);
+}
+.redeem-input:disabled { background: #F7FAFC; color: #A0AEC0; }
+
+.redeem-btn {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #05152E;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.redeem-btn:hover:not(:disabled) { filter: brightness(1.3); }
+.redeem-btn:disabled { opacity: .5; cursor: default; }
+
+.redeem-msg {
+  min-height: 17px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #718096;
+}
+.redeem-msg.good { color: #2F855A; font-weight: 600; }
+.redeem-msg.bad  { color: #C53030; }
+
+/* 잔액이 0이면 배지가 충전 버튼 역할을 한다 */
+button.credit-badge {
+  cursor: pointer;
+  font-family: inherit;
+}
+button.credit-badge:hover { filter: brightness(1.2); }
+.credit-badge.empty {
+  background: rgba(255, 107, 107, .16);
+  border-color: rgba(255, 107, 107, .5);
+  color: #FF9B9B;
+}

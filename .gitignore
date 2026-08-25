@@ -4,3 +4,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+check_key.py
+dev_server.py
+measure_cost.py
+index.html.bak
