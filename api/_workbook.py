@@ -102,6 +102,40 @@ SEC_BOX = 25.5                  # 섹션 번호 사각형 한 변
 ROW_H = 29.48                   # 필기 줄 한 칸 높이
 
 
+# ---------------------------------------------------------------------------
+# 데이터 정규화
+#
+# 같은 필드라도 출처에 따라 형태가 다르다.
+#   - 앱이 AI 에게 요구하는 스키마(app.js) : "단어: 뜻" 같은 문자열
+#   - 손으로 만든 샘플 JSON               : ["단어", "뜻"] 같은 리스트
+# 문자열에 [0], [1] 로 접근하면 첫 글자·둘째 글자가 나오므로 반드시 거쳐야 한다.
+# ---------------------------------------------------------------------------
+
+def _split(text, sep=":", parts=2):
+    """'단어: 뜻' 처럼 구분자로 나뉜 문자열을 조각낸다. 모자라면 빈 문자열로 채운다."""
+    out = [p.strip() for p in str(text).split(sep, parts - 1)]
+    return out + [""] * (parts - len(out))
+
+
+def as_pair(item):
+    """(앞, 뒤) 두 조각으로 정규화한다."""
+    if isinstance(item, (list, tuple)):
+        vals = [str(v) for v in item] + ["", ""]
+        return vals[0], vals[1]
+    return tuple(_split(item, ":", 2))
+
+
+def as_triple(item):
+    """(라벨, 한글 설명, 영문 힌트) 세 조각으로 정규화한다."""
+    if isinstance(item, (list, tuple)):
+        vals = [str(v) for v in item] + ["", "", ""]
+        return vals[0], vals[1], vals[2]
+    # 문자열 하나로 온 경우: '라벨: 설명 | 힌트' 정도까지만 받아준다.
+    label, rest = _split(item, ":", 2)
+    ko, en = _split(rest, "|", 2)
+    return label, ko, en
+
+
 class Sheet:
     """A4 한 장. top(위에서부터의 거리) 좌표계를 쓰고 내부에서 뒤집는다."""
 
@@ -305,8 +339,11 @@ class Sheet:
                 t = top + i * row_h
                 self.box(x, t, w, row_h, stroke=LINE)
                 if i < len(items):
+                    it = items[i]
+                    if isinstance(it, (list, tuple)):
+                        it = ": ".join(str(v) for v in it if str(v).strip())
                     self.box(x + 9.5, t + row_h / 2 - 1.6, 3.2, 3.2, fill=self.accent)
-                    self.para(x + 19.0, t + 9.0, items[i], "KR", 10.6, INK,
+                    self.para(x + 19.0, t + 9.0, str(it), "KR", 10.6, INK,
                               width=w - 28, leading=13)
         return top + row_h * n + 21.0
 
@@ -391,9 +428,9 @@ def build_g12(c, doc, g):
 
     s = Sheet(c, g, doc, 1, total); s.chrome(); top = s.cover_header()
     top = s.section("01", "생각 확장 브레인스토밍 (Brainstorming)", top)
-    top = s.cards(top, [tuple(b) for b in d["brain"]])
+    top = s.cards(top, [_norm_card(b) for b in d["brain"]])
     top = s.section("02", "스토리 뼈대 아웃라인 (Writing Outline)", top)
-    top = s.label_table(top, [(r[0], r[1], r[2]) for r in d["outline"]])
+    top = s.label_table(top, [as_triple(r) for r in d["outline"]])
     top = s.section("03", "키워드 & 핵심 문장 패턴 (Key Words & Patterns)", top)
     s.two_lists(top, d["keywords"], d["patterns"])
     c.showPage()
@@ -416,9 +453,9 @@ def build_g34(c, doc, g):
 
     s = Sheet(c, g, doc, 1, total); s.chrome(); top = s.cover_header()
     top = s.section("01", "생각 확장 브레인스토밍 (Brainstorming)", top)
-    top = s.cards(top, [tuple(b) for b in d["brain"]])
+    top = s.cards(top, [_norm_card(b) for b in d["brain"]])
     top = s.section("02", "단락 구조 아웃라인 (Topic-Supporting-Closing)", top)
-    top = s.label_table(top, [(r[0], r[1], r[2]) for r in d["outline"]])
+    top = s.label_table(top, [as_triple(r) for r in d["outline"]])
     top = s.section("03", "핵심 논리 연결어 & 표현 (Key Transitions)", top)
     s.two_lists(top, d["vocab"], d["trans"])
     c.showPage()
@@ -441,9 +478,9 @@ def build_g56(c, doc, g):
 
     s = Sheet(c, g, doc, 1, total); s.chrome(); top = s.cover_header()
     top = s.section("01", "정형 4문단 에세이 아웃라인 매트릭스 (4-Paragraph Matrix)", top)
-    top = s.label_table(top, [(r[0], r[1], r[2]) for r in d["matrix"]], label_w=112.0)
+    top = s.label_table(top, [as_triple(r) for r in d["matrix"]], label_w=112.0)
     top = s.section("02", "합격을 가르는 고급 아카데믹 어휘 5종 (Advanced Academic Vocabulary)", top)
-    rows = [(w[0], w[1]) for w in d["vocab"]]
+    rows = [as_pair(w) for w in d["vocab"]]
     row_h = 26.6
     s.box(MX, top, CW, row_h * len(rows), stroke=LINE_2)
     for i, (word, mean) in enumerate(rows):
@@ -457,7 +494,10 @@ def build_g56(c, doc, g):
 
     s = Sheet(c, g, doc, 2, total); s.chrome(); top = s.running_header()
     top = s.section("03", "최상위 탑반 기준 정형 4문단 모델 에세이 (Model Essay)", top)
-    s.essay_box(top, d["essay_paras"], d["word_count"], size=10.6, leading=17.4)
+    paras = d["essay_paras"]
+    if isinstance(paras, str):                      # 문단이 통째로 올 때
+        paras = [q for q in paras.split(chr(10) * 2) if q.strip()] or [paras]
+    s.essay_box(top, [str(p) for p in paras], d["word_count"], size=10.6, leading=17.4)
     c.showPage()
 
     s = Sheet(c, g, doc, 3, total); s.chrome(); top = s.running_header()
@@ -470,6 +510,14 @@ def build_g56(c, doc, g):
     top = s.section("05", "3초 감점 차단 자가 진단표", top)
     s.checklist(top)
     c.showPage()
+
+
+def _norm_card(item):
+    """브레인스토밍 카드. 3요소면 (카테고리, 질문, 답변), 2요소면 (질문, 답변)."""
+    if isinstance(item, (list, tuple)):
+        vals = [str(v) for v in item]
+        return tuple(vals[:3]) if len(vals) >= 3 else (vals + [""])[:2]
+    return tuple(_split(item, ":", 2))
 
 
 BUILDERS = {"Grade 1-2": build_g12, "Grade 3-4": build_g34, "Grade 5-6": build_g56}
