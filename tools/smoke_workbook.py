@@ -150,6 +150,34 @@ CARD_W = (493.2 - 11.3 * 2) / 3
 failed = 0
 
 
+def find_overlaps(page):
+    """같은 높이 구간에 서로 다른 텍스트 줄이 겹쳐 그려졌는지 찾는다.
+
+    표의 행 높이를 고정해 두면 첫 단이 두 줄로 늘어났을 때 둘째 단을 덮는다.
+    글자 상자가 세로로 겹치면서 가로로도 겹치면 사람 눈에 뭉개져 보인다.
+    """
+    rows = {}
+    for c in page.chars:
+        if c["top"] < 45 or c["top"] > 790:
+            continue
+        key = round(c["top"], 1)
+        r = rows.setdefault(key, {"x0": c["x0"], "x1": c["x1"], "h": c["height"], "t": ""})
+        r["x0"] = min(r["x0"], c["x0"])
+        r["x1"] = max(r["x1"], c["x1"])
+        r["t"] += c["text"]
+
+    items = sorted(rows.items())
+    bad = []
+    for i in range(len(items)):
+        t1, a = items[i]
+        for t2, b in items[i + 1:]:
+            if t2 >= t1 + a["h"] * 0.72:      # 세로로 충분히 떨어짐
+                break
+            if b["x0"] < a["x1"] - 1 and a["x0"] < b["x1"] - 1:   # 가로로도 겹침
+                bad.append((a["t"][:34], b["t"][:34]))
+    return bad
+
+
 def check(doc, grade, label):
     global failed
     pdf = _workbook.render(doc, grade)
@@ -176,12 +204,65 @@ def check(doc, grade, label):
             if norm(q) not in blob:
                 missing.append(q.strip())
 
-    mark = "OK  " if not missing else "FAIL"
+    with pdfplumber.open(path) as p:
+        overlaps, spill = [], []
+        for n, pg in enumerate(p.pages, 1):
+            overlaps += find_overlaps(pg)
+            # 본문이 푸터 구분선(794.5)을 넘으면 인쇄 시 잘린다.
+            for c in pg.chars:
+                if c["top"] > 790 and c["size"] > 7.6:
+                    spill.append(f"p{n}:{c['text']}")
+            for r in pg.rects:
+                if r["width"] < 590 and r["top"] + r["height"] > 795:
+                    spill.append(f"p{n}:도형")
+
+    problems = []
     if missing:
+        problems.append(f"누락 {missing[:3]}")
+    if overlaps:
+        problems.append(f"겹침 {overlaps[:2]}")
+    if spill:
+        problems.append(f"푸터침범 {len(spill)}건 {spill[:2]}")
+
+    mark = "OK  " if not problems else "FAIL"
+    if problems:
         failed += 1
     print(f"  {mark} {label} / {grade}: {pages}p, 검사 {len(items)}항목"
-          + (f" — 누락 {missing[:4]}" if missing else ""))
+          + (" — " + " / ".join(problems) if problems else ""))
 
+
+# ---------------------------------------------------------------------------
+# (C) 실제로 화면에서 깨졌던 데이터 — 영어 지시문이 길어 두 줄로 접힌다.
+# ---------------------------------------------------------------------------
+LONG_DOC = {
+    "topic_no": 12, "area": "경험",
+    "topic": "Write about the differences between last year and this year.",
+    "source_academy": "MI",
+    "grades": {"Grade 5-6": {
+        "matrix": [
+            ["Introduction",
+             "Introduce the main differences between last year and this year, "
+             "focusing on physical growth and school responsibilities.",
+             "작년과 올해의 주요 차이를 신체적 성장과 학교에서의 책임감 변화를 소개하세요."],
+            ["Body 1",
+             "Explain how growing taller has changed your appearance, sports ability, "
+             "confidence, and health habits.",
+             "키가 큰 변화가 외모, 운동 능력, 자신감, 건강 습관에 어떤 영향을 주었는지 설명하세요."],
+            ["Body 2",
+             "Describe how schoolwork has become more challenging and how planning "
+             "has made you more independent.",
+             "학교 공부가 더 어려워졌고 계획을 세워 더 독립적으로 공부하게 된 점을 쓰세요."],
+            ["Conclusion",
+             "Summarize the differences and state how these changes show your "
+             "personal development.",
+             "두 차이를 요약하고 이러한 변화가 개인적인 성장을 보여 준다고 정리하세요."],
+        ],
+        "vocab": ["responsibility: 책임감", "independent: 독립적인", "confidence: 자신감",
+                  "appearance: 외모", "development: 성장, 발달"],
+        "essay_paras": ["Last year and this year feel very different to me. " * 5] * 4,
+        "word_count": 205,
+    }},
+}
 
 print("[A] app.js 스키마 (문자열 형태)")
 for g in ("Grade 1-2", "Grade 3-4", "Grade 5-6"):
@@ -190,6 +271,10 @@ for g in ("Grade 1-2", "Grade 3-4", "Grade 5-6"):
 print()
 print("[B] 샘플 JSON (리스트 형태)")
 check(PAIR_DOC, "Grade 5-6", "B")
+
+print()
+print("[C] 긴 영어 지시문 (화면에서 겹쳤던 실제 데이터)")
+check(LONG_DOC, "Grade 5-6", "C")
 
 print()
 if failed:

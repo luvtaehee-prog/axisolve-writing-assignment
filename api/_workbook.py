@@ -98,6 +98,7 @@ LINE = HexColor("#E0E4E6")
 LINE_2 = HexColor("#D7DDE0")
 WHITE = HexColor("#FFFFFF")
 
+FOOT_TOP = 794.5                # 푸터 구분선. 본문은 이 위에서 끝나야 한다
 SEC_BOX = 25.5                  # 섹션 번호 사각형 한 변
 ROW_H = 29.48                   # 필기 줄 한 칸 높이
 
@@ -312,26 +313,91 @@ class Sheet:
                 self.para(x + 10.2, t, it[1], "KR", 10.6, INK, width=inner, leading=15.2)
         return top + h + 21.0
 
-    def label_table(self, top, rows, label_w=102.1, row_h=49.3):
-        """좌측 라벨 + 우측 2행(한글 설명 / 영문 힌트) 표."""
-        self.box(MX, top, CW, row_h * len(rows), stroke=LINE_2)
-        for i, (label, ko, en) in enumerate(rows):
+    def label_table(self, top, rows, label_w=102.1, row_h=49.3, max_bottom=None):
+        """좌측 라벨 + 우측 2단(주 설명 / 보조 힌트) 표.
+
+        세 텍스트 모두 줄바꿈될 수 있으므로 행 높이를 고정하지 않는다.
+        고정하면 첫 단이 두 줄로 늘어났을 때 둘째 단 위에 겹쳐 그려진다.
+
+        max_bottom 을 주면 그 안에 들어가도록 글자 크기를 단계적으로 줄인다.
+        """
+        content_w = CW - label_w - 14.0
+        lab_w = label_w - 16.0
+        pad_top, pad_bottom, gap = 12.0, 10.0, 4.0
+        limit = max_bottom if max_bottom is not None else (FOOT_TOP - 8.0)
+
+        scale = 1.0
+        while True:
+            s1, l1 = 11.0 * scale, 14.2 * scale
+            s2, l2 = 10.2 * scale, 13.2 * scale
+            sl, ll = 11.5 * scale, 11.5 * scale * 1.24
+            laid = []
+            for label, main, sub in rows:
+                w1 = self.wrap(str(main), "KR", s1, content_w) if str(main).strip() else []
+                w2 = self.wrap(str(sub), "KR", s2, content_w) if str(sub).strip() else []
+                wl = self.wrap(str(label), "KR-Bold", sl, lab_w)
+                h = pad_top + len(w1) * l1 + (gap + len(w2) * l2 if w2 else 0) + pad_bottom
+                h = max(h, pad_top + len(wl) * ll + pad_bottom, row_h * scale)
+                laid.append((wl, w1, w2, h, sl, ll, s1, l1, s2, l2))
+            total = sum(x[3] for x in laid)
+            if top + total <= limit or scale <= 0.70:
+                break
+            scale = round(scale - 0.04, 2)
+
+        self.box(MX, top, CW, total, stroke=LINE_2)
+        t = top
+        for i, (wl, w1, w2, h, sl, ll, s1, l1, s2, l2) in enumerate(laid):
+            if i % 2 == 0:
+                self.box(MX, t, CW, h, fill=HexColor("#FCFCFD"))
+            self.box(MX, t, CW, h, stroke=LINE)
+            self.box(MX, t, 2.6, h, fill=self.accent)
+
+            y = t + pad_top + 1.8
+            for ln in wl:
+                self.text(MX + 9.5, y, ln, "KR-Bold", sl, self.deep)
+                y += ll
+
+            y = t + pad_top
+            for ln in w1:
+                self.text(MX + label_w, y, ln, "KR", s1, INK)
+                y += l1
+            if w2:
+                y += gap
+                for ln in w2:
+                    self.text(MX + label_w, y, ln, "KR", s2, MUTED)
+                    y += l2
+            t += h
+        return t + 21.0
+
+    def pair_table(self, top, rows, key_w=148.0, row_h=26.6):
+        """단어 + 뜻 2열 표. 남은 높이를 넘지 않도록 행을 줄인다."""
+        n = len(rows)
+        if not n:
+            return top
+        avail = (FOOT_TOP - 8.0) - top
+        if n * row_h > avail:
+            row_h = max(17.0, avail / n)
+        size = min(11.0, row_h * 0.41)
+
+        self.box(MX, top, CW, row_h * n, stroke=LINE_2)
+        for i, (word, mean) in enumerate(rows):
             t = top + i * row_h
             if i % 2 == 0:
-                self.box(MX, t, CW, row_h, fill=HexColor("#FCFCFD"))
+                self.box(MX, t, CW, row_h, fill=self.soft)
             self.box(MX, t, CW, row_h, stroke=LINE)
-            self.box(MX, t, 2.6, row_h, fill=self.accent)
-            self.text(MX + 9.5, t + 13.8, label, "KR-Bold", 11.5, self.deep)
-            self.para(MX + label_w, t + 12.8, ko, "KR", 11.0, INK,
-                      width=CW - label_w - 12, leading=14.2)
-            self.text(MX + label_w, t + 30.6, en, "KR", 10.2, MUTED)
-        return top + row_h * len(rows) + 21.0
+            base = t + (row_h - size) / 2 - 1.0
+            self.text(MX + 12.0, base, str(word), "KR-Bold", size, self.deep)
+            self.text(MX + key_w, base + 0.4, str(mean), "KR", size * 0.96, INK)
+        return top + row_h * n + 21.0
 
     def two_lists(self, top, left, right, row_h=29.9):
         """좌우 2열 리스트 (키워드 / 패턴)."""
         gap = 22.7
         w = (CW - gap) / 2
         n = max(len(left), len(right))
+        avail = (FOOT_TOP - 8.0) - top
+        if n and n * row_h > avail:
+            row_h = max(20.0, avail / n)
         for col, items in ((0, left), (1, right)):
             x = MX + col * (w + gap)
             self.box(x, top, w, row_h * n, stroke=LINE_2)
@@ -430,7 +496,9 @@ def build_g12(c, doc, g):
     top = s.section("01", "생각 확장 브레인스토밍 (Brainstorming)", top)
     top = s.cards(top, [_norm_card(b) for b in d["brain"]])
     top = s.section("02", "스토리 뼈대 아웃라인 (Writing Outline)", top)
-    top = s.label_table(top, [as_triple(r) for r in d["outline"]])
+    reserve = 21.0 + (SEC_BOX + 8.5) + max(len(d["keywords"]), len(d["patterns"])) * 29.9 + 10.0
+    top = s.label_table(top, [as_triple(r) for r in d["outline"]],
+                        max_bottom=FOOT_TOP - reserve)
     top = s.section("03", "키워드 & 핵심 문장 패턴 (Key Words & Patterns)", top)
     s.two_lists(top, d["keywords"], d["patterns"])
     c.showPage()
@@ -455,7 +523,9 @@ def build_g34(c, doc, g):
     top = s.section("01", "생각 확장 브레인스토밍 (Brainstorming)", top)
     top = s.cards(top, [_norm_card(b) for b in d["brain"]])
     top = s.section("02", "단락 구조 아웃라인 (Topic-Supporting-Closing)", top)
-    top = s.label_table(top, [as_triple(r) for r in d["outline"]])
+    reserve = 21.0 + (SEC_BOX + 8.5) + max(len(d["vocab"]), len(d["trans"])) * 29.9 + 10.0
+    top = s.label_table(top, [as_triple(r) for r in d["outline"]],
+                        max_bottom=FOOT_TOP - reserve)
     top = s.section("03", "핵심 논리 연결어 & 표현 (Key Transitions)", top)
     s.two_lists(top, d["vocab"], d["trans"])
     c.showPage()
@@ -478,18 +548,11 @@ def build_g56(c, doc, g):
 
     s = Sheet(c, g, doc, 1, total); s.chrome(); top = s.cover_header()
     top = s.section("01", "정형 4문단 에세이 아웃라인 매트릭스 (4-Paragraph Matrix)", top)
-    top = s.label_table(top, [as_triple(r) for r in d["matrix"]], label_w=112.0)
+    reserve = 21.0 + (SEC_BOX + 8.5) + len(d["vocab"]) * 26.6 + 10.0
+    top = s.label_table(top, [as_triple(r) for r in d["matrix"]], label_w=112.0,
+                        max_bottom=FOOT_TOP - reserve)
     top = s.section("02", "합격을 가르는 고급 아카데믹 어휘 5종 (Advanced Academic Vocabulary)", top)
-    rows = [as_pair(w) for w in d["vocab"]]
-    row_h = 26.6
-    s.box(MX, top, CW, row_h * len(rows), stroke=LINE_2)
-    for i, (word, mean) in enumerate(rows):
-        t = top + i * row_h
-        if i % 2 == 0:
-            s.box(MX, t, CW, row_h, fill=s.soft)
-        s.box(MX, t, CW, row_h, stroke=LINE)
-        s.text(MX + 12.0, t + 8.0, word, "KR-Bold", 11.0, s.deep)
-        s.text(MX + 148.0, t + 8.4, mean, "KR", 10.6, INK)
+    s.pair_table(top, [as_pair(w) for w in d["vocab"]])
     c.showPage()
 
     s = Sheet(c, g, doc, 2, total); s.chrome(); top = s.running_header()
