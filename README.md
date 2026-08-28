@@ -33,6 +33,7 @@
 | [docs/learning-notes.md](docs/learning-notes.md) | 과제 목표 6항목에 대한 답 |
 | [docs/bonus.md](docs/bonus.md) | 보너스 과제 대응 (한 것과 안 한 것) |
 | [docs/evidence/](docs/evidence/) | 증빙 자료 — 스크린샷 규격과 AI 코딩 도구 사용 기록 |
+| [docs/deploy-guide.md](docs/deploy-guide.md) | 이 저장소로 Vercel 프로젝트를 만드는 절차와 확인 명령 |
 
 이 문서들은 `.vercelignore` 의 `docs/` 규칙에 따라 **배포본에는 올라가지 않습니다.**
 
