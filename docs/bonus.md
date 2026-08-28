@@ -5,7 +5,7 @@
 
 ---
 
-## A. 운영 자동화 / 데이터 저장 고도화 — ✅ 구현됨
+## A. 운영 자동화 / 데이터 저장 고도화 — ✅ 구현 / ⚠ 현재 배포본에서는 비활성
 
 > 과제 문구: "문의/폼 입력 또는 AI 결과를 외부 도구나 간단한 저장소에 연동한다"
 > 배움 포인트: "사용자 입력 → 처리 → 저장/알림" 운영 흐름을 서비스 관점으로 확장
@@ -48,6 +48,24 @@
   동시에 두 번 누를 때 한 번만 차감될 수 있습니다. 원자적으로 처리해야 합니다.
 - **환경변수가 없으면 계층 전체가 꺼집니다.** Supabase 를 설정하지 않은 채 배포해도
   로그인·크레딧 없이 그대로 동작합니다 (`api/me.py` 의 `auth_enabled: false`).
+
+### ⚠ 현재 배포 상태
+
+**코드는 다 있지만 배포본에서는 꺼져 있습니다.** Supabase 환경변수를 아직 넣지 않았기 때문입니다.
+
+```bash
+curl -s https://axisolve-writing.vercel.app/api/me
+# {"logged_in": false, "config": {..., "auth_enabled": false, ...}}
+```
+
+`auth_enabled: false` 는 고장이 아니라 **설계된 동작**입니다. 세 개의 환경변수
+(`SUPABASE_URL` · `SUPABASE_ANON_KEY` · `SUPABASE_SERVICE_ROLE_KEY`)가 비어 있으면
+로그인·크레딧 계층 전체가 스스로 꺼지고, 나머지는 그대로 돕니다.
+설정 없이도 배포가 깨지지 않게 하려고 이렇게 만들었습니다.
+
+켜려면 [setup-phase2.md](setup-phase2.md) 의 절차(약 30분)를 따르고 Vercel 에서 재배포합니다.
+**과제 채점에는 켜지 않아도 무방합니다.** 이 갈래의 요구는 "저장소에 연동한다" 이고
+스키마·함수·연동 코드가 저장소에 있으므로, 위 사실만 밝히면 됩니다.
 
 관련 파일 — [supabase/schema.sql](../supabase/schema.sql) · [supabase/redeem.sql](../supabase/redeem.sql)
 · [api/_supabase.py](../api/_supabase.py) · 설정 절차는 [setup-phase2.md](setup-phase2.md)

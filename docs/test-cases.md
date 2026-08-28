@@ -97,6 +97,26 @@ E-5 재현 명령:
 git grep -n "sk-" -- . ':!docs'
 ```
 
+## E2. 배포본 실측 (2026-08-28)
+
+로컬이 아니라 **배포된 주소에 직접 요청해** 확인한 결과입니다.
+
+| # | 확인 항목 | 명령 | 결과 |
+|---|---|---|---|
+| E2-1 | 사이트 응답 | `curl -o /dev/null -w "%{http_code}" $URL/` | `200` |
+| E2-2 | 출처 검증 — Origin 없음 | `curl $URL/api/topics` | `403` |
+| E2-3 | 출처 검증 — 올바른 Origin | `curl -H "Origin: $URL" $URL/api/topics` | `200` |
+| E2-4 | 출처 검증 — 다른 Origin | `curl -H "Origin: https://evil.example" $URL/api/topics` | `403` |
+| E2-5 | 주제 수와 학원명 노출 | E2-3 응답 파싱 | `165개` · `src` 미포함 |
+| E2-6 | 주제 원본 직접 접근 | `curl $URL/topics.json` | `404` |
+| E2-7 | 원가 자료 직접 접근 | `curl $URL/docs/unit-economics.md` | `404` |
+| E2-8 | 공용 모듈 직접 접근 | `curl $URL/api/_guard.py` | `404` |
+| E2-9 | 로그인 계층 상태 | `curl $URL/api/me` | `auth_enabled: false` (Supabase 미설정 — [bonus.md](bonus.md) 참조) |
+
+E2-2 가 `403` 인 것이 정상입니다. `ALLOWED_ORIGINS` 가 걸려 있어 **브라우저가 아닌 곳에서
+남이 이 엔드포인트를 부를 수 없다**는 뜻입니다. 브라우저는 Origin 을 자동으로 붙이므로
+실제 사용자에게는 영향이 없습니다.
+
 ## F. 화면·반응형
 
 | # | 화면 크기 | 확인 항목 | 상태 |
