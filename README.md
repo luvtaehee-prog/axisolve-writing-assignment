@@ -1,6 +1,6 @@
 # AXISOLVE Writing Engine
 
-> **배포 주소** — <!-- DEPLOY_URL -->_배포 후 이 자리에 새 프로젝트 주소를 넣습니다_ → [배포 절차](docs/deploy-guide.md)
+> **배포 주소** — https://axisolve-writing-assignment.vercel.app
 > **저장소** — https://github.com/luvtaehee-prog/axisolve-writing-assignment
 
 어학원 레벨테스트의 채점 루브릭을 코드에 내장한 영어 라이팅 트레이닝 서비스입니다.

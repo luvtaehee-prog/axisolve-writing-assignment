@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | 작성일 | 2026-08-24 (최초) · 2026-08-28 (개정 2판) |
-| 배포 주소 | `README.md` 상단 참조 (배포 절차는 [deploy-guide.md](deploy-guide.md)) |
+| 배포 주소 | https://axisolve-writing-assignment.vercel.app |
 | 저장소 | https://github.com/luvtaehee-prog/axisolve-writing-assignment |
 
 > 개정 2판에서 바뀐 것: 섹션이 3개에서 **4개**로 늘고(요금제 추가), 로그인·크레딧 계층과

@@ -97,30 +97,50 @@ E-5 재현 명령:
 git grep -n "sk-" -- . ':!docs'
 ```
 
-## E2. 배포본 실측 (2026-08-28)
+## E2. 배포본 실측 — 제출용 배포 (2026-08-28)
 
-로컬이 아니라 **배포된 주소에 직접 요청해** 확인한 결과입니다.
+대상: **https://axisolve-writing-assignment.vercel.app** (이 저장소로 만든 Vercel 프로젝트)
 
-> 이 회차는 **기존 배포본**(`https://axisolve-writing.vercel.app`, 저장소 `luvtaehee-prog/writing`)
-> 을 잰 것입니다. 이 저장소로 새 Vercel 프로젝트를 만든 뒤에는 같은 표를 새 주소로 다시
-> 채워야 합니다 — 명령은 그대로이고 `$URL` 만 바뀝니다. 절차는 [deploy-guide.md](deploy-guide.md).
-> 기존 배포본에는 이번에 넣은 지연·타임아웃 처리가 **들어 있지 않습니다.**
+로컬이 아니라 배포된 주소에 직접 요청해 확인한 결과입니다.
 
-| # | 확인 항목 | 명령 | 결과 |
-|---|---|---|---|
-| E2-1 | 사이트 응답 | `curl -o /dev/null -w "%{http_code}" $URL/` | `200` |
-| E2-2 | 출처 검증 — Origin 없음 | `curl $URL/api/topics` | `403` |
-| E2-3 | 출처 검증 — 올바른 Origin | `curl -H "Origin: $URL" $URL/api/topics` | `200` |
-| E2-4 | 출처 검증 — 다른 Origin | `curl -H "Origin: https://evil.example" $URL/api/topics` | `403` |
-| E2-5 | 주제 수와 학원명 노출 | E2-3 응답 파싱 | `165개` · `src` 미포함 |
-| E2-6 | 주제 원본 직접 접근 | `curl $URL/topics.json` | `404` |
-| E2-7 | 원가 자료 직접 접근 | `curl $URL/docs/unit-economics.md` | `404` |
-| E2-8 | 공용 모듈 직접 접근 | `curl $URL/api/_guard.py` | `404` |
-| E2-9 | 로그인 계층 상태 | `curl $URL/api/me` | `auth_enabled: false` (Supabase 미설정 — [bonus.md](bonus.md) 참조) |
+| # | 확인 항목 | 명령 | 결과 | 판정 |
+|---|---|---|---|---|
+| E2-1 | 사이트 응답 | `curl $URL/` | `200` | ✅ |
+| E2-2 | 출처 검증 — Origin 없음 | `curl $URL/api/topics` | `200` | ⚠ **403 이어야 함** |
+| E2-3 | 출처 검증 — 올바른 Origin | `curl -H "Origin: $URL" $URL/api/topics` | `200` | ✅ |
+| E2-4 | 출처 검증 — 다른 Origin | `curl -H "Origin: https://evil.example" …` | `200` | ⚠ **403 이어야 함** |
+| E2-5 | 주제 원본 직접 접근 | `curl $URL/topics.json` | `404` | ✅ |
+| E2-6 | 원가 자료 직접 접근 | `curl $URL/docs/unit-economics.md` | `404` | ✅ |
+| E2-7 | 공용 모듈 직접 접근 | `curl $URL/api/_guard.py` | `404` | ✅ |
+| E2-8 | `/api/me` | `curl $URL/api/me` | `200` · `auth_enabled: false` | ✅ (설계된 동작) |
+| E2-9 | `/api/pdf` 빈 본문 | `curl -X POST $URL/api/pdf -d '{}'` | `400` `{"error": "학년 정보가 올바르지 않습니다."}` | ✅ |
+| E2-10 | `/api/generate` 빈 프롬프트 | `curl -X POST $URL/api/generate -d '{"prompt":""}'` | `400` `{"error": "생성 요청이 비어 있습니다. …"}` | ✅ |
+| E2-11 | 법적 고지 3장 | `curl $URL/privacy.html` 외 | 전부 `200` | ✅ |
+| E2-12 | 배포본에 타임아웃 코드 | `curl $URL/app.js \| grep -c REQUEST_TIMEOUT_MS` | `3` | ✅ |
 
-E2-2 가 `403` 인 것이 정상입니다. `ALLOWED_ORIGINS` 가 걸려 있어 **브라우저가 아닌 곳에서
-남이 이 엔드포인트를 부를 수 없다**는 뜻입니다. 브라우저는 Origin 을 자동으로 붙이므로
+### ⚠ E2-2 · E2-4 — 조치 필요
+
+`ALLOWED_ORIGINS` 환경변수가 **아직 설정되지 않았습니다.**
+지금 상태에서는 브라우저가 아닌 곳에서도 `/api/generate` 를 부를 수 있고,
+그 호출은 이 프로젝트의 OpenAI 계정으로 과금됩니다.
+
+```
+Vercel > Settings > Environment Variables
+  ALLOWED_ORIGINS = https://axisolve-writing-assignment.vercel.app
+  IP_SALT = (임의의 긴 문자열)
+  RATE_LIMIT_GLOBAL_DAILY = 150
+→ Deployments > 맨 위 > ⋯ > Redeploy
+```
+
+재배포 뒤 E2-2 와 E2-4 가 `403` 으로 바뀌면 정상입니다.
+403 이 정상값이라는 점에 주의하십시오 — 브라우저는 `Origin` 을 자동으로 붙이므로
 실제 사용자에게는 영향이 없습니다.
+
+### 참고 — 기존 배포본
+
+`https://axisolve-writing.vercel.app` (저장소 `luvtaehee-prog/writing`) 에서는 같은 시각
+E2-2·E2-4 가 `403` 으로 나왔습니다. 그쪽은 `ALLOWED_ORIGINS` 가 설정되어 있습니다.
+다만 **이번에 넣은 지연·타임아웃 처리가 들어 있지 않으므로 제출 대상이 아닙니다.**
 
 ## F. 화면·반응형
 
