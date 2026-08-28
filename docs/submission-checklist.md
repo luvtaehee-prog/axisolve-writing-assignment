@@ -16,7 +16,7 @@
 
 | 요구 | 상태 | 근거 |
 |---|---|---|
-| 배포 URL 이 있다 | ✅ | https://axisolve-writing.vercel.app — `README.md` 최상단 |
+| 배포 URL 이 있다 | 🖐 | `README.md` 최상단. 절차는 [deploy-guide.md](deploy-guide.md) |
 | 최소 3개 이상의 페이지/섹션, 메뉴 이동 가능 | ✅ | **4개** — `#home` `#generator` `#pricing` `#about`. 해시 라우팅은 [nav.js](../nav.js), 상단 링크는 `index.html` 의 `data-nav` |
 | 반응형, 모바일에서 정상 표시 | ✅ | `<meta name="viewport">` + 중단점 — `styles.css` 820/720/640/520px, `landing.css` 1000/980/900/720/620/560px |
 | AI API 연동 기능 1개 이상 (입력→출력) | ✅ | 에세이 생성 — 입력 `#generator`, 처리 [api/generate.py](../api/generate.py), 출력 결과 패널 |
@@ -37,7 +37,7 @@
 | 기술 스택 | ✅ | `README.md` "기술 스택" |
 | 실행 방법 | ✅ | `README.md` "로컬에서 실행하기" — `py dev_server.py` |
 | 배포 방법 | ✅ | `README.md` "배포 방법 (Vercel)" 5단계 |
-| 배포 URL | ✅ | `README.md` 최상단 |
+| 배포 URL | 🖐 | `README.md` 최상단 |
 | 환경 변수(키) 설정 방법 | ✅ | `README.md` "API 키 보안" + [.env.example](../.env.example) |
 
 ### ④ 서비스 기획서 → [service-plan.md](service-plan.md)
@@ -124,7 +124,7 @@
 
 ## 제출 직전 확인
 
-- [x] `README.md` 최상단에 실제 배포 URL 을 넣었다
+- [ ] `README.md` 최상단에 실제 배포 URL 을 넣었다
 - [ ] 배포 URL 을 시크릿 창에서 열어 4개 섹션이 다 동작한다
 - [ ] 휴대폰으로 열어 가로 스크롤이 없다
 - [ ] AI 생성을 한 번 돌려 결과가 나온다

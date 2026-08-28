@@ -101,6 +101,11 @@ git grep -n "sk-" -- . ':!docs'
 
 로컬이 아니라 **배포된 주소에 직접 요청해** 확인한 결과입니다.
 
+> 이 회차는 **기존 배포본**(`https://axisolve-writing.vercel.app`, 저장소 `luvtaehee-prog/writing`)
+> 을 잰 것입니다. 이 저장소로 새 Vercel 프로젝트를 만든 뒤에는 같은 표를 새 주소로 다시
+> 채워야 합니다 — 명령은 그대로이고 `$URL` 만 바뀝니다. 절차는 [deploy-guide.md](deploy-guide.md).
+> 기존 배포본에는 이번에 넣은 지연·타임아웃 처리가 **들어 있지 않습니다.**
+
 | # | 확인 항목 | 명령 | 결과 |
 |---|---|---|---|
 | E2-1 | 사이트 응답 | `curl -o /dev/null -w "%{http_code}" $URL/` | `200` |
