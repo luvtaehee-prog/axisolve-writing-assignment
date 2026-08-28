@@ -28,6 +28,7 @@
 | 문서 | 내용 |
 |---|---|
 | [docs/service-plan.md](docs/service-plan.md) | **서비스 기획서** — 목적·타겟·페이지 구성·AI 기능의 입력/출력/실패 처리 |
+| [docs/exam-answers.md](docs/exam-answers.md) | **평가 문항 답변서** — 평가서 항목 1~4 에 대한 답 |
 | [docs/submission-checklist.md](docs/submission-checklist.md) | 과제 요구사항 한 줄씩과 그 근거 파일의 대응표 |
 | [docs/test-cases.md](docs/test-cases.md) | 테스트 케이스와 실행 기록 (실제로 돌린 것과 아닌 것을 구분) |
 | [docs/learning-notes.md](docs/learning-notes.md) | **설명문** — 과제 목표 6항목을 스스로 설명한 글 |
