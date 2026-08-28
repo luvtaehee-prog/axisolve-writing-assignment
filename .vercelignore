@@ -13,3 +13,6 @@ supabase/
 tools/
 README.md
 .env.example
+
+# 로컬 개발 전용 서버 — 배포본에서는 Vercel 이 그 역할을 한다.
+dev_server.py
