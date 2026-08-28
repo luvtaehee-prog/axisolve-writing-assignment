@@ -40,6 +40,31 @@
 > OpenAI 대시보드에서 **Budget limit** 을 반드시 걸어 두십시오.
 > 이 서비스는 생성 한 번이 최대 4회 호출이 될 수 있습니다.
 
+### 빌드가 이 오류로 실패하면
+
+```
+Build Failed
+No python entrypoint found in default locations, but found potential entrypoints:
+api/generate.py (variable: handler) api/me.py (variable: handler) ...
+Add this to your pyproject.toml: [tool.vercel] entrypoint = "api.generate:handler"
+```
+
+Vercel 이 루트의 `requirements.txt` 를 보고 이 저장소를 **"파이썬 앱 하나"** 로 잡은 것입니다.
+이 프로젝트는 파이썬 앱이 아니라 **정적 파일 + `api/` 서버리스 함수 5개**이므로
+진입점이 없는 것이 맞습니다.
+
+**안내대로 `pyproject.toml` 에 `entrypoint` 를 넣지 마십시오.**
+그러면 함수 5개가 앱 하나로 뭉개져 `/api/topics` 도 `/api/pdf` 도 사라집니다.
+
+고치는 법:
+
+1. `vercel.json` 에 `"framework": null` 이 들어 있는지 확인합니다 (이 저장소에는 있습니다)
+2. 그래도 같은 오류가 나면 대시보드가 이깁니다 —
+   **Settings > Build and Deployment > Framework Settings > Framework Preset** 을
+   **Other** 로 바꾸고 **Save**
+3. Build Command · Output Directory · Install Command 의 Override 토글이 켜져 있으면 모두 끕니다
+4. **Deployments > 맨 위 > ⋯ > Redeploy**
+
 ## 3단계 — 주소 확인
 
 배포가 끝나면 주소가 나옵니다. 저장소 이름을 따르므로 보통 이렇게 됩니다.
