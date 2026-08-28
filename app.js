@@ -30,6 +30,11 @@
     "Grade 5-6": "총 180~220단어, 정확히 4문단(Introduction / Body 1 / Body 2 / Conclusion). 포멀한 어조를 유지하고 구어적 축약형(don't, can't, isn't 등)은 절대 쓰지 말 것. 각 근거 뒤에 상술(Elaboration)을 반드시 포함할 것."
   };
   var MAX_ATTEMPTS = 4;
+  // 서버 함수 상한은 60초다(vercel.json 의 maxDuration). 그보다 길게 잡아,
+  // 서버가 자기 판단으로 끝낼 기회를 먼저 준 뒤에 브라우저가 끊는다.
+  var REQUEST_TIMEOUT_MS = 75000;
+  // 끊지는 않고 "오래 걸린다"고만 알려 주는 시점. 초5-6은 추론이 길어 흔히 넘긴다.
+  var SLOW_NOTICE_MS = 20000;
   var CUSTOM_AREA = "직접 입력";
   var DRAFT_PREFIX = "axisolve_essay_draft_";
 
@@ -142,17 +147,39 @@
       var t = await AXAuth.token();
       if (t) headers.Authorization = "Bearer " + t;
     }
-    var res = await fetch("/api/generate", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({
-        prompt: prompt,
-        system: SYSTEM_PROMPT,
-        gen_id: ctx && ctx.genId,
-        topic_no: ctx && ctx.topicNo,
-        grade: ctx && ctx.grade
-      })
-    });
+    // 응답이 오지 않을 때 화면이 영원히 "생성 중"으로 남지 않게 한다.
+    // 20초에 안내를 띄우고, 75초에 요청을 끊는다.
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    var slowTimer = setTimeout(function () {
+      if (ctx && ctx.onSlow) ctx.onSlow();
+    }, SLOW_NOTICE_MS);
+    var abortTimer = controller ? setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS) : null;
+
+    var res;
+    try {
+      res = await fetch("/api/generate", {
+        method: "POST",
+        headers: headers,
+        signal: controller ? controller.signal : undefined,
+        body: JSON.stringify({
+          prompt: prompt,
+          system: SYSTEM_PROMPT,
+          gen_id: ctx && ctx.genId,
+          topic_no: ctx && ctx.topicNo,
+          grade: ctx && ctx.grade
+        })
+      });
+    } catch (e) {
+      if (controller && controller.signal.aborted) {
+        throw new Error("응답이 " + Math.round(REQUEST_TIMEOUT_MS / 1000) +
+                        "초를 넘겨 중단했습니다. 잠시 후 다시 시도해 주십시오.");
+      }
+      throw new Error("AI 서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주십시오.");
+    } finally {
+      clearTimeout(slowTimer);
+      if (abortTimer) clearTimeout(abortTimer);
+    }
+
     var data;
     try { data = await res.json(); } catch (e) { throw new Error("서버 응답을 해석할 수 없습니다."); }
     if (!res.ok) {
@@ -218,11 +245,11 @@
     return false;
   }
 
-  async function generateWithRetry(grade, doc, keywordsText, onAttempt) {
+  async function generateWithRetry(grade, doc, keywordsText, onAttempt, onSlow) {
     var best = null;
     var feedback = null;
     var lastError = null;
-    var ctx = { genId: newGenId(), topicNo: doc.topic_no, grade: grade };
+    var ctx = { genId: newGenId(), topicNo: doc.topic_no, grade: grade, onSlow: onSlow };
     for (var attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       if (onAttempt) onAttempt(attempt, MAX_ATTEMPTS);
       var prompt = buildPrompt(grade, doc, keywordsText, feedback);
@@ -617,7 +644,12 @@
       '</button></div></div>';
 
     if (!data && !loading) { return html + '<div class="panel-empty">아직 생성되지 않았습니다.</div>'; }
-    if (loading && !data) { return html + '<div class="panel-loading"><span class="spinner"></span> 생성 중' + attemptLabel + '...</div>'; }
+    var slowNote = loading && loading.slow
+      ? '<div class="panel-slow">응답이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 기다려 주십시오.</div>'
+      : "";
+    if (loading && !data) {
+      return html + '<div class="panel-loading"><span class="spinner"></span> 생성 중' + attemptLabel + '...' + slowNote + '</div>';
+    }
 
     var assessment = assess(grade, data);
     var min = assessment.range[0], max = assessment.range[1];
@@ -804,6 +836,10 @@
     try {
       var result = await generateWithRetry(grade, doc, keywordsText, function (attempt, max) {
         loadingInfo[grade] = { attempt: attempt, max: max };
+        renderMain();
+      }, function () {
+        if (!loadingInfo[grade]) return;
+        loadingInfo[grade].slow = true;
         renderMain();
       });
       doc.grades[grade] = result.data;

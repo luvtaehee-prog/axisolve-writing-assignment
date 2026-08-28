@@ -6,7 +6,7 @@
   --g12:#A65C46; --g12-soft:#F8F0EC; --g12-deep:#713E30;
   --g34:#39766D; --g34-soft:#ECF5F2; --g34-deep:#27554F;
   --g56:#3F5873; --g56-soft:#EEF2F6; --g56-deep:#273C51;
-  --good:#8FE0A0; --bad:#E08A8A;
+  --good:#8FE0A0; --bad:#E08A8A; --warn:#E0C08A;
   --sans:"Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --mono: ui-monospace,"SF Mono",Consolas,monospace;
 }
@@ -113,6 +113,7 @@ input,textarea{font-family:inherit;}
 .panel-top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px;}
 .panel-rubric{font-size:12.5px; color:var(--muted-2); max-width:70%;}
 .panel-empty, .panel-loading{padding:40px 0; text-align:center; color:var(--muted-3); font-size:13.5px;}
+.panel-slow{margin-top:10px; font-size:12.5px; color:var(--warn);}
 
 .gauge-box{padding:12px; border-radius:9px; background:var(--panel); border:1px solid var(--border); margin-bottom:18px;}
 .gauge-row{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted-2); margin-bottom:6px;}
