@@ -30,7 +30,7 @@
 | [docs/service-plan.md](docs/service-plan.md) | **서비스 기획서** — 목적·타겟·페이지 구성·AI 기능의 입력/출력/실패 처리 |
 | [docs/submission-checklist.md](docs/submission-checklist.md) | 과제 요구사항 한 줄씩과 그 근거 파일의 대응표 |
 | [docs/test-cases.md](docs/test-cases.md) | 테스트 케이스와 실행 기록 (실제로 돌린 것과 아닌 것을 구분) |
-| [docs/learning-notes.md](docs/learning-notes.md) | 과제 목표 6항목에 대한 답 |
+| [docs/learning-notes.md](docs/learning-notes.md) | **설명문** — 과제 목표 6항목을 스스로 설명한 글 |
 | [docs/bonus.md](docs/bonus.md) | 보너스 과제 대응 (한 것과 안 한 것) |
 | [docs/evidence/](docs/evidence/) | 증빙 자료 — 스크린샷 규격과 AI 코딩 도구 사용 기록 |
 | [docs/deploy-guide.md](docs/deploy-guide.md) | 이 저장소로 Vercel 프로젝트를 만드는 절차와 확인 명령 |
