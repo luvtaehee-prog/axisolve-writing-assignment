@@ -1,5 +1,8 @@
 # AXISOLVE Writing Engine
 
+> **배포 주소** — <!-- DEPLOY_URL -->`https://__여기에_배포_URL을_넣으십시오__.vercel.app`
+> **저장소** — https://github.com/luvtaehee-prog/axisolve-writing-assignment
+
 어학원 레벨테스트의 채점 루브릭을 코드에 내장한 영어 라이팅 트레이닝 서비스입니다.
 **기출 165개 주제에서 고르거나, 원하는 주제와 아이디어를 직접 입력**하면
 학년별 합격 기준(단어 수·문장 수·문단 구조·격식)에 맞춘 모범 답안이 생성됩니다.
@@ -7,10 +10,31 @@
 핵심은 "생성"이 아니라 **"기준 통과까지 생성"** 입니다. 응답을 받는 즉시 기계가
 분량과 구조를 검사하고, 미달이면 최대 4회까지 자동으로 다시 씁니다.
 
-- **프론트엔드**: 바닐라 HTML / CSS / JavaScript (프레임워크·빌드 도구 없음)
-- **백엔드**: Vercel Python Serverless Functions (`api/`)
-- **AI**: OpenAI Responses API
-- **계정·크레딧**: Supabase (카카오 로그인) — 미설정 시 자동 비활성
+## 기술 스택
+
+| 계층 | 사용 기술 |
+|---|---|
+| 프론트엔드 | 바닐라 HTML / CSS / JavaScript — **프레임워크·빌드 도구·CDN 없음** (`package.json` 이 없습니다) |
+| 라우팅 | `location.hash` 기반 섹션 전환 (`nav.js`) |
+| 백엔드 | Vercel Python Serverless Functions (`api/` 아래 엔드포인트 5개) |
+| AI | OpenAI Responses API (`api/generate.py`) |
+| PDF | reportlab — 서버 렌더링 (`api/_workbook.py`) |
+| 계정·크레딧 | Supabase / 카카오 로그인 — 환경변수 미설정 시 자동 비활성 |
+| 임시 저장 | 브라우저 localStorage (생성 초안) |
+| 배포 | Vercel (GitHub 연동 자동 배포) |
+
+## 과제 산출물 문서
+
+| 문서 | 내용 |
+|---|---|
+| [docs/service-plan.md](docs/service-plan.md) | **서비스 기획서** — 목적·타겟·페이지 구성·AI 기능의 입력/출력/실패 처리 |
+| [docs/submission-checklist.md](docs/submission-checklist.md) | 과제 요구사항 한 줄씩과 그 근거 파일의 대응표 |
+| [docs/test-cases.md](docs/test-cases.md) | 테스트 케이스와 실행 기록 (실제로 돌린 것과 아닌 것을 구분) |
+| [docs/learning-notes.md](docs/learning-notes.md) | 과제 목표 6항목에 대한 답 |
+| [docs/bonus.md](docs/bonus.md) | 보너스 과제 대응 (한 것과 안 한 것) |
+| [docs/evidence/](docs/evidence/) | 증빙 자료 — 스크린샷 규격과 AI 코딩 도구 사용 기록 |
+
+이 문서들은 `.vercelignore` 의 `docs/` 규칙에 따라 **배포본에는 올라가지 않습니다.**
 
 ## 이용 구조
 
@@ -51,7 +75,11 @@
 | 상황 | 사용자에게 보이는 처리 |
 |---|---|
 | 주제 미선택 | 생성 버튼 비활성 / "왼쪽 목록에서 주제를 선택하십시오" 안내 |
+| 직접 입력 주제가 2자 미만 | "주제를 입력해 주십시오." + 입력칸으로 포커스 이동 |
 | 생성 진행 중 | 버튼 잠금 + 시도 횟수 표시(1/4 …) |
+| **응답이 20초 초과** | "응답이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 기다려 주십시오." (요청은 계속) |
+| **응답이 75초 초과** | 요청을 끊고 "응답이 75초를 넘겨 중단했습니다. 잠시 후 다시 시도해 주십시오." |
+| **서버에 닿지 못함** | "AI 서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주십시오." |
 | API 키 미설정 | "OPENAI_API_KEY 가 설정되지 않았습니다" (HTTP 500) |
 | 호출량 초과 | "요청이 몰려 잠시 처리할 수 없습니다" (HTTP 429) |
 | 네트워크 오류 | "AI 서버에 연결하지 못했습니다" (HTTP 504) |
@@ -59,6 +87,12 @@
 | 출력 토큰 초과로 잘림 | "응답이 완성되지 않았습니다" (HTTP 502) → 자동 재시도 |
 | 응답 형식 오류 | "응답에서 JSON을 찾을 수 없음" → 자동 재시도 |
 | 4회 모두 기준 미달 | 가장 근접한 결과 표시 + 화면에 경고 배지 |
+
+75초는 서버 함수 상한(`vercel.json` 의 `maxDuration` 60초)보다 길게 잡았습니다.
+서버가 자기 판단으로 끝낼 기회를 먼저 주고, 그래도 아무 말이 없을 때 브라우저가 끊습니다.
+반대로 잡으면 서버는 정상 처리 중인데 브라우저만 포기합니다.
+
+재현 방법과 실행 기록은 [docs/test-cases.md](docs/test-cases.md) 에 있습니다.
 
 ## 워크북 PDF
 
@@ -144,11 +178,22 @@ axisolve-writing-engine/
 ├── api/me.py           # 로그인 상태 · 잔액 조회
 ├── api/redeem.py       # 충전 코드 등록
 ├── auth.js             # 카카오 로그인 (의존성 없음)
+├── privacy.html        # 개인정보 처리방침
+├── terms.html          # 이용약관 (생성물 제출 금지 조항)
+├── refund.html         # 환불 규정
+├── legal.css           # 위 세 문서 공용 스타일
 ├── supabase/           # DB 스키마 (schema.sql · redeem.sql)
-├── requirements.txt    # openai
-├── vercel.json         # 함수 실행 시간 설정
-└── .env.example        # 로컬 개발용 환경변수 예시
+├── dev_server.py       # 로컬 개발 서버 (Vercel 라우팅 흉내, 배포 제외)
+├── tools/smoke_app.js     # app.js 회귀 테스트 (브라우저 없이 실행)
+├── tools/smoke_workbook.py # 워크북 PDF 회귀 테스트
+├── docs/               # 기획서 · 테스트 · 학습 정리 · 증빙 (배포 제외)
+├── requirements.txt    # openai · reportlab
+├── vercel.json         # 함수 실행 시간 · 보안 헤더 · 내부 모듈 차단
+├── .env.example        # 로컬 개발용 환경변수 예시
+└── .vercelignore       # 배포본에서 뺄 것 (주제 원본 · 문서 · 도구)
 ```
+
+프론트엔드(루트의 `*.html` `*.css` `*.js`)와 백엔드(`api/`)가 폴더로 갈려 있습니다.
 
 ## 배포 방법 (Vercel)
 
@@ -174,6 +219,19 @@ py dev_server.py               # http://localhost:3000
 
 `dev_server.py` 는 Vercel 없이 정적 파일과 `api/` 의 모든 엔드포인트를 함께 구동합니다.
 Vercel의 파일 기반 라우팅을 흉내내므로 `api/` 에 파일을 추가하면 자동으로 잡힙니다.
+
+배포본에 없는 경로(`topics.json` · `docs/` · `tools/`)와 `/api/_*` 를 로컬에서도 404 로
+막습니다. **"로컬은 되는데 배포하면 404"** 를 배포 전에 잡기 위해서입니다.
+
+`OPENAI_API_KEY` 없이도 뜹니다. 화면은 전부 열리고 생성만 500 으로 막히므로,
+키 없이 화면·네비게이션·반응형을 확인할 수 있습니다.
+
+회귀 테스트:
+
+```bash
+node tools/smoke_app.js       # app.js 를 최소 DOM 위에서 실제로 실행 (13항목)
+py tools/smoke_workbook.py    # 워크북 PDF 렌더링
+```
 
 `vercel dev` 를 쓰셔도 됩니다(`npm i -g vercel`). 다만 로그인과 프로젝트 연결이 필요합니다.
 
