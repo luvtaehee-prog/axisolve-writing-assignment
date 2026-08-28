@@ -56,9 +56,9 @@
 
 | 요구 | 상태 | 근거 |
 |---|---|---|
-| 데스크톱 스크린샷 | 🖐 | `evidence/screenshots/01~04` |
-| 모바일 스크린샷 | 🖐 | `evidence/screenshots/05~07` |
-| AI 기능 동작 장면 | 🖐 | `evidence/screenshots/08~10` |
+| 데스크톱 스크린샷 | ✅ | `evidence/screenshots/01~04` — 1440×900 |
+| 모바일 스크린샷 | ✅ | `evidence/screenshots/05~07` — 390×844, 가로 스크롤 `0px` |
+| AI 기능 동작 장면 | 🔶 | `08` 입력 화면 완료. `09` `10` 은 배포본에 `OPENAI_API_KEY` 미설정으로 미촬영 |
 | AI 코딩 도구 사용 과정 | ✅ / 🖐 | 커밋 트레일러 11건은 [ai-tool-log.md](evidence/ai-tool-log.md) 로 검증 가능. 대화 화면 `14~16` 은 직접 |
 
 ---
@@ -78,7 +78,7 @@
 | 4-3 | 섹션 간 네비게이션 | ✅ | [nav.js](../nav.js) |
 | 4-3 | 레이아웃·스타일 | ✅ | `styles.css` `landing.css` `legal.css` |
 | 4-4 | 모바일/태블릿/데스크톱 대응 | ✅ | 중단점 위 표 참조 |
-| 4-4 | 최소 2가지 화면 크기에서 확인 | 🖐 | [test-cases.md](test-cases.md) F절 · 스크린샷 01~07 |
+| 4-4 | 최소 2가지 화면 크기에서 확인 | ✅ | 1440·390 실측, 가로 스크롤 `0px`. 스크린샷 01~07 |
 | 4-5 | 사용자 입력 UI | ✅ | 주제 선택 사이드바 + 직접 입력 폼 + 아이디어 textarea |
 | 4-5 | AI 결과를 화면에 표시 | ✅ | 결과 패널 4블록 |
 | 4-5 | 실패 안내 **1개 이상** | ✅ | **3종 모두** 구현 — [service-plan.md](service-plan.md) 5.4 |
@@ -87,9 +87,9 @@
 | 4-6 | `requirements.txt` 에 패키지 정의 | ✅ | 위와 같음 |
 | 4-6 | 프론트에서 `fetch('/api/...')` 호출 | ✅ | `app.js` — `/api/generate` `/api/topics` `/api/pdf` `/api/redeem` |
 | 4-7 | GitHub–Vercel 연동 배포 | 🖐 | `README.md` "배포 방법" |
-| 4-7 | 배포 URL 에서 전체 기능 동작 확인 | 🖐 | 스크린샷 |
+| 4-7 | 배포 URL 에서 전체 기능 동작 확인 | 🔶 | 화면·네비게이션·실패 처리 확인. **AI 생성은 키 미설정으로 미확인** |
 | 4-8 | README 정리 | ✅ | 위 ③ |
-| 4-8 | 스크린샷·AI 도구 증빙 준비 | 🖐 | [evidence/](evidence/) |
+| 4-8 | 스크린샷·AI 도구 증빙 준비 | 🔶 | 12장 완료 · `09` `10` `15~17` 남음 |
 | 4-8 | 기획서를 제출 패키지에 포함 | ✅ | [service-plan.md](service-plan.md) |
 
 ## 5절 — 보너스 과제 → [bonus.md](bonus.md)
@@ -125,9 +125,9 @@
 ## 제출 직전 확인
 
 - [x] `README.md` 최상단에 실제 배포 URL 을 넣었다
-- [ ] 배포 URL 을 시크릿 창에서 열어 4개 섹션이 다 동작한다
-- [ ] 휴대폰으로 열어 가로 스크롤이 없다
-- [ ] AI 생성을 한 번 돌려 결과가 나온다
-- [ ] `docs/evidence/screenshots/` 에 01~10 이 있다
+- [x] 배포 URL 을 열어 4개 섹션이 다 동작한다
+- [x] 390×844 에서 가로 스크롤이 없다 (측정값 `0px`)
+- [ ] **AI 생성을 한 번 돌려 결과가 나온다** ← `OPENAI_API_KEY` 미설정으로 현재 실패
+- [ ] `docs/evidence/screenshots/` 에 `09` `10` 을 채운다 (나머지 12장 완료)
 - [ ] Vercel 환경변수에 `OPENAI_API_KEY` 와 `ALLOWED_ORIGINS` 가 들어 있다 ← **`ALLOWED_ORIGINS` 미설정 상태 (2026-08-28 확인)**
 - [ ] OpenAI 계정에 Budget limit 을 걸어 두었다
